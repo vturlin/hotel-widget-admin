@@ -1,0 +1,1 @@
+# hotel-widget-admin
