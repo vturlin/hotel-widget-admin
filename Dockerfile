@@ -4,9 +4,9 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy manifests first for better layer caching
-COPY package.json package-lock.json* ./
-RUN npm ci
+# Copy manifest first for better layer caching
+COPY package.json ./
+RUN npm install
 
 # Copy the rest and build the Vite frontend into ./dist
 COPY . .
@@ -18,8 +18,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Install ONLY production deps (no Vite, no plugin-react)
-COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
+COPY package.json ./
+RUN npm install --omit=dev
 
 # Copy the server and the built frontend from the builder stage
 COPY --from=builder /app/dist ./dist
