@@ -189,9 +189,15 @@ function AdminUI() {
   return (
     <div className={styles.app}>
       {/* Header */}
+      {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <span className={styles.headerIcon}>🏨</span>
+          <img
+            src="https://www.d-edge.com/wp-content/themes/d-edge/img/logo_d-edge.svg"
+            alt="D-EDGE"
+            className={styles.headerLogo}
+          />
+          <span className={styles.headerDivider} />
           <h1 className={styles.headerTitle}>Hotel Widget — Config Manager</h1>
         </div>
         <div className={styles.headerRight}>
