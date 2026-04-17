@@ -197,26 +197,63 @@ def main():
         page_icon="🏨",
         layout="wide",
     )
+
+    # -------- Custom CSS: sticky right column with real-screen preview ------
     st.markdown(
         """
         <style>
-        /* Right column: stick to the top of the viewport */
-        div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-child(2) {
+        /* Make the main content fill the viewport so sticky works */
+        .main .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+            max-width: 100%;
+        }
+
+        /* Target the second column inside the horizontal block */
+        div[data-testid="stHorizontalBlock"] {
+            align-items: flex-start;
+        }
+
+        div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-of-type(2),
+        div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-of-type(2) {
             position: sticky;
-            top: 4rem;                /* leaves room for Streamlit's top bar */
-            align-self: flex-start;   /* critical: prevents the column from
-                                          stretching to match the left one */
-            max-height: calc(100vh - 5rem);
+            top: 1rem;
+            align-self: flex-start;
+            max-height: calc(100vh - 2rem);
             overflow-y: auto;
-            padding-right: 0.5rem;    /* gap for the scrollbar */
         }
-        /* Hide the scrollbar visually but keep it functional (optional) */
-        div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-child(2)::-webkit-scrollbar {
-            width: 6px;
+
+        /* The preview iframe container — styled to look like a real screen */
+        .preview-frame {
+            position: relative;
+            width: 100%;
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
-        div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-child(2)::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 3px;
+        .preview-frame-bar {
+            height: 18px;
+            background: #2a2a2a;
+            border-radius: 4px 4px 0 0;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+        .preview-frame-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #555;
+        }
+        .preview-frame iframe {
+            width: 100%;
+            display: block;
+            border: 0;
+            background: white;
+            border-radius: 0 0 4px 4px;
         }
         </style>
         """,
@@ -227,15 +264,12 @@ def main():
         return
 
     st.title("🏨 Hotel Widget — Config Manager")
-    st.caption(
-        "Create a config for a new hotel. "
-        "The form generates a JSON that will be published to GitHub."
-    )
+    st.caption("Changes update the preview automatically.")
 
-    # -------- Layout: form on the left, preview on the right -----------------
-    left, right = st.columns([5, 4])
+    # ===== LAYOUT: form (left) | sticky preview (right) =====================
+    left, right = st.columns([5, 5], gap="large")
 
-    # -------- Left column: the form ------------------------------------------
+    # ===== LEFT: form ========================================================
     with left:
         # ----- Identification -----
         st.subheader("🆔 Identification")
@@ -245,30 +279,21 @@ def main():
 
         id_col1, id_col2 = st.columns([3, 1])
         with id_col1:
-            hotel_id = st.text_input(
-                "Hotel ID",
-                value=st.session_state.hotel_id,
-                help="Unique identifier. Used in the script tag: widget.js?id=...",
-            )
+            hotel_id = st.text_input("Hotel ID", value=st.session_state.hotel_id)
         with id_col2:
-            st.write("")  # spacer
+            st.write("")
             if st.button("🎲 Regenerate"):
                 st.session_state.hotel_id = generate_hotel_id()
                 st.rerun()
 
         hotel_name = st.text_input("Hotel name", value="Hôtel Demo")
-        hotel_domain = st.text_input(
-            "Client domain",
-            value="hotel-client.com",
-            help="Not used by the widget yet — stored for reference.",
-        )
+        hotel_domain = st.text_input("Client domain", value="hotel-client.com")
 
         # ----- Data source -----
         st.subheader("📊 Data source")
         csv_url = st.text_input(
             "Google Sheet CSV URL",
             value="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv",
-            help="Google Sheet published as CSV.",
         )
 
         st.markdown("**Rooms**")
@@ -302,7 +327,6 @@ def main():
         reserve_url = st.text_input(
             "Reserve URL",
             value="https://book.hotel-client.com/?arrive={checkIn}&depart={checkOut}&room={roomId}",
-            help="Use {checkIn}, {checkOut}, {roomId} as placeholders.",
         )
 
         # ----- Appearance -----
@@ -336,7 +360,6 @@ def main():
 
         # ----- OTA labels -----
         st.subheader("🏷️ OTA labels")
-        st.caption("Shown in the comparison list.")
         ota_col1, ota_col2 = st.columns(2)
         with ota_col1:
             booking_label = st.text_input("Booking.com", value="Booking.com")
@@ -358,21 +381,13 @@ def main():
         st.subheader("📈 Analytics")
         analytics_enabled = st.toggle("Enable dataLayer push", value=True)
         if analytics_enabled:
-            datalayer_name = st.text_input(
-                "dataLayer variable name",
-                value="dataLayer",
-                help="GTM-compatible. Leave 'dataLayer' unless the host site uses a different name.",
-            )
-            event_prefix = st.text_input(
-                "Event prefix",
-                value="hotel_widget_",
-                help="All events will be prefixed with this. E.g. 'hotel_widget_opened'.",
-            )
+            datalayer_name = st.text_input("dataLayer variable name", value="dataLayer")
+            event_prefix = st.text_input("Event prefix", value="hotel_widget_")
         else:
             datalayer_name = "dataLayer"
             event_prefix = "hotel_widget_"
 
-    # -------- Right column: preview + publish --------------------------------
+    # Build form dict ---------------------------------------------------------
     form = {
         "hotel_id": hotel_id,
         "hotel_name": hotel_name,
@@ -396,13 +411,92 @@ def main():
 
     config = build_config(form)
 
+    # ===== RIGHT: sticky preview + publish ===================================
     with right:
         st.subheader("👀 Live preview")
-        preview_url = build_preview_url(config)
-        st.components.v1.iframe(preview_url, height=600, scrolling=True)
 
-        st.subheader("📄 Generated JSON")
-        st.code(json.dumps(config, indent=2, ensure_ascii=False), language="json")
+        # Device toggle: desktop vs mobile aspect ratio
+        device = st.radio(
+            "Device",
+            options=["Desktop", "Mobile"],
+            horizontal=True,
+            label_visibility="collapsed",
+        )
+
+        # Real screen ratios: 16:9 desktop, 9:19.5 mobile (iPhone-ish)
+        if device == "Desktop":
+            aspect_ratio = 16 / 9
+            iframe_height_hint = 450
+        else:
+            aspect_ratio = 9 / 19.5
+            iframe_height_hint = 640
+
+        # Render the iframe inside a framed "screen" container.
+        # The iframe height is fixed; the width is controlled by Streamlit
+        # (100% of the column). The container keeps the real aspect ratio.
+        preview_url = build_preview_url(config)
+
+        # Add a cache-buster so the iframe reloads on config change.
+        # We append a hash of the config so identical configs don't reload,
+        # but any change (color, name, etc.) triggers a fresh load.
+        import hashlib
+        config_hash = hashlib.md5(
+            json.dumps(config, sort_keys=True).encode()
+        ).hexdigest()[:8]
+        preview_url_with_bust = f"{preview_url}&v={config_hash}"
+
+        st.components.v1.html(
+            f"""
+            <div class="preview-frame">
+                <div class="preview-frame-bar">
+                    <span class="preview-frame-dot" style="background:#ff5f56"></span>
+                    <span class="preview-frame-dot" style="background:#ffbd2e"></span>
+                    <span class="preview-frame-dot" style="background:#27c93f"></span>
+                </div>
+                <iframe
+                    src="{preview_url_with_bust}"
+                    style="height: {iframe_height_hint}px; aspect-ratio: {aspect_ratio};"
+                    loading="lazy"
+                ></iframe>
+            </div>
+            <style>
+                .preview-frame {{
+                    position: relative;
+                    width: 100%;
+                    background: #1a1a1a;
+                    border-radius: 8px;
+                    padding: 8px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                }}
+                .preview-frame-bar {{
+                    height: 18px;
+                    background: #2a2a2a;
+                    border-radius: 4px 4px 0 0;
+                    display: flex;
+                    align-items: center;
+                    padding: 0 8px;
+                    gap: 4px;
+                    margin-bottom: 4px;
+                }}
+                .preview-frame-dot {{
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                }}
+                .preview-frame iframe {{
+                    width: 100%;
+                    display: block;
+                    border: 0;
+                    background: white;
+                    border-radius: 0 0 4px 4px;
+                }}
+            </style>
+            """,
+            height=iframe_height_hint + 50,
+        )
+
+        with st.expander("📄 Generated JSON", expanded=False):
+            st.code(json.dumps(config, indent=2, ensure_ascii=False), language="json")
 
         st.download_button(
             "⬇️ Download JSON",
@@ -411,26 +505,22 @@ def main():
             mime="application/json",
         )
 
-        st.subheader("🚀 Publish to GitHub")
         if not GITHUB_TOKEN:
-            st.error(
-                "GITHUB_TOKEN is not configured. "
-                "Add it to Streamlit Secrets to enable publishing."
-            )
+            st.error("GITHUB_TOKEN is not configured. Add it to Streamlit Secrets.")
         else:
-            if st.button("Publish config to repo", type="primary"):
+            if st.button("🚀 Publish config to repo", type="primary"):
                 try:
                     with st.spinner("Publishing..."):
                         result = publish_to_github(hotel_id, config)
                     st.success(
-                        f"✅ Published! Commit SHA: `{result['commit']['sha'][:7]}`"
+                        f"✅ Published! Commit `{result['commit']['sha'][:7]}`"
                     )
                     st.caption(
                         f"Available in ~1–2 min at `configs/{hotel_id}.json` "
-                        f"once GitHub Actions finishes deploying."
+                        f"once GitHub Actions finishes."
                     )
                     st.markdown(
-                        f"**Embed code:** \n"
+                        f"**Embed code:**\n"
                         f"```html\n"
                         f'<script async '
                         f'src="https://{GITHUB_OWNER}.github.io/{GITHUB_REPO}/'
