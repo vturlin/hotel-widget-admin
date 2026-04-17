@@ -197,6 +197,31 @@ def main():
         page_icon="🏨",
         layout="wide",
     )
+    st.markdown(
+        """
+        <style>
+        /* Right column: stick to the top of the viewport */
+        div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-child(2) {
+            position: sticky;
+            top: 4rem;                /* leaves room for Streamlit's top bar */
+            align-self: flex-start;   /* critical: prevents the column from
+                                          stretching to match the left one */
+            max-height: calc(100vh - 5rem);
+            overflow-y: auto;
+            padding-right: 0.5rem;    /* gap for the scrollbar */
+        }
+        /* Hide the scrollbar visually but keep it functional (optional) */
+        div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-child(2)::-webkit-scrollbar {
+            width: 6px;
+        }
+        div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:nth-child(2)::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
     if not check_password():
         return
