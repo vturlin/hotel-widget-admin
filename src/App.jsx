@@ -277,13 +277,22 @@ function AdminUI() {
 // ──────────────────────────────────────────────────────────────────────
 
 function PreviewFrame({ previewUrl, viewport, device, setDevice }) {
-  const maxWidth = device === 'desktop' ? 760 : 320;
-  const scale = maxWidth / viewport.w;
+  // We scale to fit BOTH width and height of the available preview area.
+  // Using the smaller scale ensures the frame never overflows, so the
+  // Desktop/Mobile toggle remains reachable at the bottom.
+  const maxWidth = device === 'desktop' ? 760 : 260;
+  const maxHeight = 560;
+
+  const scaleByWidth = maxWidth / viewport.w;
+  const scaleByHeight = maxHeight / viewport.h;
+  const scale = Math.min(scaleByWidth, scaleByHeight);
+
+  const displayW = viewport.w * scale;
   const displayH = viewport.h * scale;
 
   return (
     <div className={styles.previewWrap}>
-      <div className={styles.browserFrame} style={{ width: maxWidth + 16 }}>
+      <div className={styles.browserFrame} style={{ width: displayW + 16 }}>
         <div className={styles.browserBar}>
           <span className={styles.browserDot} style={{ background: '#ff5f56' }} />
           <span className={styles.browserDot} style={{ background: '#ffbd2e' }} />
@@ -291,7 +300,7 @@ function PreviewFrame({ previewUrl, viewport, device, setDevice }) {
         </div>
         <div
           className={styles.browserViewport}
-          style={{ width: maxWidth, height: displayH }}
+          style={{ width: displayW, height: displayH }}
         >
           <iframe
             key={previewUrl}
