@@ -3,9 +3,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import styles from './page.module.css';
 
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────
 // Constants
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────
 
 const SUPPORTED_LOCALES: Record<string, string> = {
   en: 'English', fr: 'Français', es: 'Español', de: 'Deutsch', it: 'Italiano',
@@ -27,14 +27,22 @@ const WIDGET_PREVIEW_URL =
   process.env.NEXT_PUBLIC_WIDGET_PREVIEW_URL ||
   'https://vturlin.github.io/best-price-widget/demo.html';
 
-// -----------------------------------------------------------------------------
-// Types
-// -----------------------------------------------------------------------------
+type TabKey = 'identity' | 'data' | 'appearance' | 'languages' | 'analytics' | 'publish';
 
-interface Room {
-  id: string;
-  name: string;
-}
+const TABS: { key: TabKey; label: string; icon: string }[] = [
+  { key: 'identity',    label: 'Identity',    icon: '🆔' },
+  { key: 'data',        label: 'Data',        icon: '📊' },
+  { key: 'appearance',  label: 'Appearance',  icon: '🎨' },
+  { key: 'languages',   label: 'Languages',   icon: '🌍' },
+  { key: 'analytics',   label: 'Analytics',   icon: '📈' },
+  { key: 'publish',     label: 'Publish',     icon: '🚀' },
+];
+
+// ─────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────
+
+interface Room { id: string; name: string; }
 
 interface FormState {
   hotelId: string;
@@ -57,9 +65,9 @@ interface FormState {
   eventPrefix: string;
 }
 
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────
 // Utils
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────
 
 function generateHotelId(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -71,14 +79,10 @@ function generateHotelId(): string {
 }
 
 function parseRoomsText(text: string): Room[] {
-  return text
-    .trim()
-    .split('\n')
-    .map((line) => {
-      const [id, name] = line.split('|').map((s) => s.trim());
-      return id && name ? { id, name } : null;
-    })
-    .filter((r): r is Room => r !== null);
+  return text.trim().split('\n').map((line) => {
+    const [id, name] = line.split('|').map((s) => s.trim());
+    return id && name ? { id, name } : null;
+  }).filter((r): r is Room => r !== null);
 }
 
 function buildConfig(form: FormState) {
@@ -106,20 +110,23 @@ function buildConfig(form: FormState) {
 }
 
 function buildPreviewUrl(config: object): string {
-  const encoded = btoa(encodeURIComponent(JSON.stringify(config))
-    .replace(/%([0-9A-F]{2})/g, (_, p) => String.fromCharCode(parseInt(p, 16))))
-    .replace(/=/g, '')
+  // UTF-8 safe base64 (the native btoa doesn't handle non-ASCII like 'ô')
+  const json = JSON.stringify(config);
+  const bytes = new TextEncoder().encode(json);
+  let binary = '';
+  bytes.forEach((b) => { binary += String.fromCharCode(b); });
+  const b64 = btoa(binary)
+    .replace(/=+$/, '')
     .replace(/\+/g, '-')
     .replace(/\//g, '_');
-  return `${WIDGET_PREVIEW_URL}?preview=${encoded}`;
+  return `${WIDGET_PREVIEW_URL}?preview=${b64}`;
 }
 
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────
 // Main page
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────
 
 export default function Home() {
-  // Auth gate
   const [authed, setAuthed] = useState(false);
   const [pwdInput, setPwdInput] = useState('');
   const [authError, setAuthError] = useState('');
@@ -162,9 +169,9 @@ export default function Home() {
   return <AdminUI />;
 }
 
-// -----------------------------------------------------------------------------
-// Admin UI (shown after auth)
-// -----------------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────
+// Admin UI
+// ─────────────────────────────────────────────────────────────────────────
 
 function AdminUI() {
   const [form, setForm] = useState<FormState>({
@@ -202,13 +209,13 @@ function AdminUI() {
     form.rooms.map((r) => `${r.id} | ${r.name}`).join('\n')
   );
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [activeTab, setActiveTab] = useState<TabKey>('identity');
   const [publishState, setPublishState] = useState<{
     status: 'idle' | 'publishing' | 'success' | 'error';
     message?: string;
     sha?: string;
   }>({ status: 'idle' });
 
-  // Sync rooms from text
   useEffect(() => {
     const parsed = parseRoomsText(roomsText);
     setForm((f) => ({
@@ -223,21 +230,15 @@ function AdminUI() {
   const config = useMemo(() => buildConfig(form), [form]);
   const previewUrl = useMemo(() => buildPreviewUrl(config), [config]);
 
-  // Device dimensions
+  // Device viewport dims — real browser sizes we simulate inside the iframe
   const viewport = device === 'desktop' ? { w: 1280, h: 720 } : { w: 390, h: 844 };
-  const displayWidth = 560;
-  const scale = displayWidth / viewport.w;
-  const displayHeight = viewport.h * scale;
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
   function updateChannelLabel(key: string, value: string) {
-    setForm((f) => ({
-      ...f,
-      channelLabels: { ...f.channelLabels, [key]: value },
-    }));
+    setForm((f) => ({ ...f, channelLabels: { ...f.channelLabels, [key]: value } }));
   }
 
   function toggleLocale(locale: string) {
@@ -265,10 +266,7 @@ function AdminUI() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Publish failed');
-      setPublishState({
-        status: 'success',
-        sha: data.commit?.sha?.substring(0, 7),
-      });
+      setPublishState({ status: 'success', sha: data.commit?.sha?.substring(0, 7) });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setPublishState({ status: 'error', message: msg });
@@ -276,9 +274,7 @@ function AdminUI() {
   }
 
   function downloadJson() {
-    const blob = new Blob([JSON.stringify(config, null, 2)], {
-      type: 'application/json',
-    });
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -288,342 +284,526 @@ function AdminUI() {
   }
 
   return (
-    <div className={styles.layout}>
-      {/* =========== LEFT: form ============ */}
-      <div className={styles.formColumn}>
-        <h1 className={styles.title}>🏨 Hotel Widget — Config Manager</h1>
-        <p className={styles.subtitle}>Changes update the preview live.</p>
+    <div className={styles.app}>
+      {/* Header */}
+      <header className={styles.header}>
+        <div className={styles.headerLeft}>
+          <span className={styles.headerIcon}>🏨</span>
+          <h1 className={styles.headerTitle}>Hotel Widget — Config Manager</h1>
+        </div>
+        <div className={styles.headerRight}>
+          <span className={styles.idBadge}>{form.hotelId}</span>
+        </div>
+      </header>
 
-        {/* Identification */}
-        <section className={styles.section}>
-          <h2>🆔 Identification</h2>
-
-          <label>
-            <span>Hotel ID</span>
-            <div className={styles.inputRow}>
-              <input
-                type="text"
-                value={form.hotelId}
-                onChange={(e) => updateField('hotelId', e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => updateField('hotelId', generateHotelId())}
-                className={styles.secondaryBtn}
-              >
-                🎲 Regenerate
-              </button>
-            </div>
-          </label>
-
-          <label>
-            <span>Hotel name</span>
-            <input
-              type="text"
-              value={form.hotelName}
-              onChange={(e) => updateField('hotelName', e.target.value)}
-            />
-          </label>
-
-          <label>
-            <span>Client domain</span>
-            <input
-              type="text"
-              value={form.hotelDomain}
-              onChange={(e) => updateField('hotelDomain', e.target.value)}
-            />
-          </label>
-        </section>
-
-        {/* Data source */}
-        <section className={styles.section}>
-          <h2>📊 Data source</h2>
-
-          <label>
-            <span>Google Sheet CSV URL</span>
-            <input
-              type="text"
-              value={form.csvUrl}
-              onChange={(e) => updateField('csvUrl', e.target.value)}
-            />
-          </label>
-
-          <label>
-            <span>Rooms (one per line, format: id | name)</span>
-            <textarea
-              rows={5}
-              value={roomsText}
-              onChange={(e) => setRoomsText(e.target.value)}
-            />
-          </label>
-
-          {form.rooms.length > 0 && (
-            <label>
-              <span>Default room</span>
-              <select
-                value={form.defaultRoomId}
-                onChange={(e) => updateField('defaultRoomId', e.target.value)}
-              >
-                {form.rooms.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-        </section>
-
-        {/* Booking */}
-        <section className={styles.section}>
-          <h2>🔗 Booking engine</h2>
-          <label>
-            <span>Reserve URL</span>
-            <input
-              type="text"
-              value={form.reserveUrl}
-              onChange={(e) => updateField('reserveUrl', e.target.value)}
-            />
-            <span className={styles.help}>
-              Use {`{checkIn}`}, {`{checkOut}`}, {`{roomId}`} as placeholders.
-            </span>
-          </label>
-        </section>
-
-        {/* Appearance */}
-        <section className={styles.section}>
-          <h2>🎨 Appearance</h2>
-
-          <div className={styles.twoCol}>
-            <label>
-              <span>Brand color (buttons)</span>
-              <input
-                type="color"
-                value={form.brandColor}
-                onChange={(e) => updateField('brandColor', e.target.value)}
-              />
-            </label>
-            <label>
-              <span>Background color (panel)</span>
-              <input
-                type="color"
-                value={form.backgroundColor}
-                onChange={(e) => updateField('backgroundColor', e.target.value)}
-              />
-            </label>
-          </div>
-
-          <label>
-            <span>Position</span>
-            <select
-              value={form.position}
-              onChange={(e) => updateField('position', e.target.value)}
-            >
-              {Object.entries(POSITIONS).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            <span>Logo URL (optional)</span>
-            <input
-              type="text"
-              value={form.logoUrl}
-              onChange={(e) => updateField('logoUrl', e.target.value)}
-            />
-          </label>
-        </section>
-
-        {/* i18n */}
-        <section className={styles.section}>
-          <h2>🌍 Languages & currency</h2>
-
-          <label>
-            <span>Enabled languages</span>
-            <div className={styles.chipGrid}>
-              {Object.entries(SUPPORTED_LOCALES).map(([code, name]) => (
-                <button
-                  type="button"
-                  key={code}
-                  className={`${styles.chip} ${
-                    form.enabledLocales.includes(code) ? styles.chipActive : ''
-                  }`}
-                  onClick={() => toggleLocale(code)}
-                >
-                  {code} · {name}
-                </button>
-              ))}
-            </div>
-          </label>
-
-          <label>
-            <span>Default language</span>
-            <select
-              value={form.defaultLocale}
-              onChange={(e) => updateField('defaultLocale', e.target.value)}
-            >
-              {form.enabledLocales.map((code) => (
-                <option key={code} value={code}>
-                  {code} · {SUPPORTED_LOCALES[code] || code}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            <span>Currency</span>
-            <select
-              value={form.currency}
-              onChange={(e) => updateField('currency', e.target.value)}
-            >
-              {SUPPORTED_CURRENCIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </label>
-        </section>
-
-        {/* OTA labels */}
-        <section className={styles.section}>
-          <h2>🏷️ OTA labels</h2>
-          <div className={styles.twoCol}>
-            {Object.entries(form.channelLabels).map(([key, value]) => (
-              <label key={key}>
-                <span>{key}</span>
-                <input
-                  type="text"
-                  value={value}
-                  onChange={(e) => updateChannelLabel(key, e.target.value)}
-                />
-              </label>
-            ))}
-          </div>
-        </section>
-
-        {/* Analytics */}
-        <section className={styles.section}>
-          <h2>📈 Analytics</h2>
-          <label className={styles.toggleLabel}>
-            <input
-              type="checkbox"
-              checked={form.analyticsEnabled}
-              onChange={(e) => updateField('analyticsEnabled', e.target.checked)}
-            />
-            <span>Enable dataLayer push</span>
-          </label>
-          {form.analyticsEnabled && (
-            <>
-              <label>
-                <span>dataLayer variable name</span>
-                <input
-                  type="text"
-                  value={form.dataLayerName}
-                  onChange={(e) => updateField('dataLayerName', e.target.value)}
-                />
-              </label>
-              <label>
-                <span>Event prefix</span>
-                <input
-                  type="text"
-                  value={form.eventPrefix}
-                  onChange={(e) => updateField('eventPrefix', e.target.value)}
-                />
-              </label>
-            </>
-          )}
-        </section>
-      </div>
-
-      {/* =========== RIGHT: sticky preview ============ */}
-      <div className={styles.previewColumn}>
-        <h2 className={styles.previewTitle}>👀 Live preview</h2>
-
-        <div className={styles.deviceToggle}>
+      {/* Tabs */}
+      <nav className={styles.tabs}>
+        {TABS.map((tab) => (
           <button
-            className={device === 'desktop' ? styles.deviceActive : ''}
-            onClick={() => setDevice('desktop')}
+            key={tab.key}
+            className={`${styles.tab} ${activeTab === tab.key ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab(tab.key)}
           >
-            🖥️ Desktop
+            <span className={styles.tabIcon}>{tab.icon}</span>
+            {tab.label}
           </button>
-          <button
-            className={device === 'mobile' ? styles.deviceActive : ''}
-            onClick={() => setDevice('mobile')}
-          >
-            📱 Mobile
-          </button>
+        ))}
+      </nav>
+
+      {/* Main split */}
+      <div className={styles.main}>
+        {/* ─── Preview area (fixed, centered) ─── */}
+        <div className={styles.previewArea}>
+          <PreviewFrame
+            previewUrl={previewUrl}
+            viewport={viewport}
+            device={device}
+            setDevice={setDevice}
+          />
         </div>
 
-        {/* Fake browser frame */}
-        <div className={styles.browserFrame} style={{ width: displayWidth + 16 }}>
-          <div className={styles.browserBar}>
-            <span className={styles.browserDot} style={{ background: '#ff5f56' }} />
-            <span className={styles.browserDot} style={{ background: '#ffbd2e' }} />
-            <span className={styles.browserDot} style={{ background: '#27c93f' }} />
+        {/* ─── Config panel (scrollable) ─── */}
+        <aside className={styles.configPanel}>
+          <div className={styles.configInner}>
+            {activeTab === 'identity' && (
+              <IdentityTab form={form} updateField={updateField} />
+            )}
+            {activeTab === 'data' && (
+              <DataTab
+                form={form}
+                updateField={updateField}
+                roomsText={roomsText}
+                setRoomsText={setRoomsText}
+              />
+            )}
+            {activeTab === 'appearance' && (
+              <AppearanceTab form={form} updateField={updateField} />
+            )}
+            {activeTab === 'languages' && (
+              <LanguagesTab
+                form={form}
+                updateField={updateField}
+                toggleLocale={toggleLocale}
+              />
+            )}
+            {activeTab === 'analytics' && (
+              <AnalyticsTab
+                form={form}
+                updateField={updateField}
+                updateChannelLabel={updateChannelLabel}
+              />
+            )}
+            {activeTab === 'publish' && (
+              <PublishTab
+                hotelId={form.hotelId}
+                config={config}
+                publishState={publishState}
+                onPublish={handlePublish}
+                onDownload={downloadJson}
+              />
+            )}
           </div>
-          <div
-            className={styles.browserViewport}
-            style={{ width: displayWidth, height: displayHeight }}
-          >
-            <iframe
-              key={previewUrl}
-              src={previewUrl}
-              style={{
-                width: viewport.w,
-                height: viewport.h,
-                transform: `scale(${scale})`,
-                transformOrigin: 'top left',
-                border: 0,
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className={styles.actions}>
-          <button
-            type="button"
-            onClick={handlePublish}
-            disabled={publishState.status === 'publishing'}
-            className={styles.primaryBtn}
-          >
-            {publishState.status === 'publishing'
-              ? '⏳ Publishing...'
-              : '🚀 Publish to GitHub'}
-          </button>
-          <button
-            type="button"
-            onClick={downloadJson}
-            className={styles.secondaryBtn}
-          >
-            ⬇️ Download JSON
-          </button>
-        </div>
-
-        {publishState.status === 'success' && (
-          <div className={styles.successBox}>
-            <strong>✅ Published!</strong>
-            <br />
-            Commit <code>{publishState.sha}</code>. Available in 1–2 min after
-            GitHub Actions finishes.
-            <div className={styles.embedCode}>
-              <strong>Embed code:</strong>
-              <pre>{`<script async src="https://vturlin.github.io/best-price-widget/widget.js?id=${form.hotelId}"></script>`}</pre>
-            </div>
-          </div>
-        )}
-
-        {publishState.status === 'error' && (
-          <div className={styles.errorBox}>
-            <strong>❌ Failed:</strong> {publishState.message}
-          </div>
-        )}
-
-        <details className={styles.jsonDetails}>
-          <summary>📄 Generated JSON</summary>
-          <pre>{JSON.stringify(config, null, 2)}</pre>
-        </details>
+        </aside>
       </div>
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// PreviewFrame
+// ─────────────────────────────────────────────────────────────────────────
+
+function PreviewFrame({
+  previewUrl,
+  viewport,
+  device,
+  setDevice,
+}: {
+  previewUrl: string;
+  viewport: { w: number; h: number };
+  device: 'desktop' | 'mobile';
+  setDevice: (d: 'desktop' | 'mobile') => void;
+}) {
+  // Scale the iframe so that its rendered viewport fits the available space
+  const maxWidth = device === 'desktop' ? 760 : 320;
+  const scale = maxWidth / viewport.w;
+  const displayW = maxWidth;
+  const displayH = viewport.h * scale;
+
+  return (
+    <div className={styles.previewWrap}>
+      <div className={styles.browserFrame} style={{ width: displayW + 16 }}>
+        <div className={styles.browserBar}>
+          <span className={styles.browserDot} style={{ background: '#ff5f56' }} />
+          <span className={styles.browserDot} style={{ background: '#ffbd2e' }} />
+          <span className={styles.browserDot} style={{ background: '#27c93f' }} />
+        </div>
+        <div
+          className={styles.browserViewport}
+          style={{ width: displayW, height: displayH }}
+        >
+          <iframe
+            key={previewUrl}
+            src={previewUrl}
+            style={{
+              width: viewport.w,
+              height: viewport.h,
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+              border: 0,
+            }}
+          />
+        </div>
+      </div>
+
+      <div className={styles.deviceToggle}>
+        <button
+          className={device === 'desktop' ? styles.deviceActive : ''}
+          onClick={() => setDevice('desktop')}
+        >
+          🖥️ Desktop
+        </button>
+        <button
+          className={device === 'mobile' ? styles.deviceActive : ''}
+          onClick={() => setDevice('mobile')}
+        >
+          📱 Mobile
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Tab components
+// ─────────────────────────────────────────────────────────────────────────
+
+function IdentityTab({
+  form,
+  updateField,
+}: {
+  form: FormState;
+  updateField: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
+}) {
+  return (
+    <>
+      <h2 className={styles.tabTitle}>Identity</h2>
+      <p className={styles.tabHint}>Basic information about the hotel.</p>
+
+      <label className={styles.field}>
+        <span>Hotel ID</span>
+        <div className={styles.inputRow}>
+          <input
+            type="text"
+            value={form.hotelId}
+            onChange={(e) => updateField('hotelId', e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => updateField('hotelId', generateHotelId())}
+            className={styles.ghostBtn}
+          >
+            🎲
+          </button>
+        </div>
+      </label>
+
+      <label className={styles.field}>
+        <span>Hotel name</span>
+        <input
+          type="text"
+          value={form.hotelName}
+          onChange={(e) => updateField('hotelName', e.target.value)}
+        />
+      </label>
+
+      <label className={styles.field}>
+        <span>Client domain</span>
+        <input
+          type="text"
+          value={form.hotelDomain}
+          onChange={(e) => updateField('hotelDomain', e.target.value)}
+        />
+        <small>Stored for reference — not used by the widget yet.</small>
+      </label>
+    </>
+  );
+}
+
+function DataTab({
+  form,
+  updateField,
+  roomsText,
+  setRoomsText,
+}: {
+  form: FormState;
+  updateField: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
+  roomsText: string;
+  setRoomsText: (s: string) => void;
+}) {
+  return (
+    <>
+      <h2 className={styles.tabTitle}>Data source</h2>
+      <p className={styles.tabHint}>
+        Google Sheet CSV URL and the list of rooms to offer.
+      </p>
+
+      <label className={styles.field}>
+        <span>Google Sheet CSV URL</span>
+        <input
+          type="text"
+          value={form.csvUrl}
+          onChange={(e) => updateField('csvUrl', e.target.value)}
+        />
+      </label>
+
+      <label className={styles.field}>
+        <span>Rooms</span>
+        <textarea
+          rows={6}
+          value={roomsText}
+          onChange={(e) => setRoomsText(e.target.value)}
+          placeholder="deluxe-king | Deluxe King Room"
+        />
+        <small>One per line, format: <code>id | name</code></small>
+      </label>
+
+      {form.rooms.length > 0 && (
+        <label className={styles.field}>
+          <span>Default room</span>
+          <select
+            value={form.defaultRoomId}
+            onChange={(e) => updateField('defaultRoomId', e.target.value)}
+          >
+            {form.rooms.map((r) => (
+              <option key={r.id} value={r.id}>{r.name}</option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <label className={styles.field}>
+        <span>Reserve URL</span>
+        <input
+          type="text"
+          value={form.reserveUrl}
+          onChange={(e) => updateField('reserveUrl', e.target.value)}
+        />
+        <small>
+          Use <code>{'{checkIn}'}</code>, <code>{'{checkOut}'}</code>,
+          <code>{'{roomId}'}</code> as placeholders.
+        </small>
+      </label>
+    </>
+  );
+}
+
+function AppearanceTab({
+  form,
+  updateField,
+}: {
+  form: FormState;
+  updateField: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
+}) {
+  return (
+    <>
+      <h2 className={styles.tabTitle}>Appearance</h2>
+      <p className={styles.tabHint}>Colors and position of the widget.</p>
+
+      <div className={styles.twoCol}>
+        <label className={styles.field}>
+          <span>Brand color</span>
+          <input
+            type="color"
+            value={form.brandColor}
+            onChange={(e) => updateField('brandColor', e.target.value)}
+          />
+          <small>Buttons and accents.</small>
+        </label>
+
+        <label className={styles.field}>
+          <span>Background</span>
+          <input
+            type="color"
+            value={form.backgroundColor}
+            onChange={(e) => updateField('backgroundColor', e.target.value)}
+          />
+          <small>Widget panel fill.</small>
+        </label>
+      </div>
+
+      <label className={styles.field}>
+        <span>Position</span>
+        <select
+          value={form.position}
+          onChange={(e) => updateField('position', e.target.value)}
+        >
+          {Object.entries(POSITIONS).map(([k, v]) => (
+            <option key={k} value={k}>{v}</option>
+          ))}
+        </select>
+      </label>
+
+      <label className={styles.field}>
+        <span>Logo URL (optional)</span>
+        <input
+          type="text"
+          value={form.logoUrl}
+          onChange={(e) => updateField('logoUrl', e.target.value)}
+        />
+      </label>
+    </>
+  );
+}
+
+function LanguagesTab({
+  form,
+  updateField,
+  toggleLocale,
+}: {
+  form: FormState;
+  updateField: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
+  toggleLocale: (l: string) => void;
+}) {
+  return (
+    <>
+      <h2 className={styles.tabTitle}>Languages & currency</h2>
+      <p className={styles.tabHint}>Click a chip to toggle a language.</p>
+
+      <div className={styles.field}>
+        <span>Enabled languages</span>
+        <div className={styles.chipGrid}>
+          {Object.entries(SUPPORTED_LOCALES).map(([code, name]) => (
+            <button
+              type="button"
+              key={code}
+              className={`${styles.chip} ${
+                form.enabledLocales.includes(code) ? styles.chipActive : ''
+              }`}
+              onClick={() => toggleLocale(code)}
+            >
+              {code} · {name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <label className={styles.field}>
+        <span>Default language</span>
+        <select
+          value={form.defaultLocale}
+          onChange={(e) => updateField('defaultLocale', e.target.value)}
+        >
+          {form.enabledLocales.map((code) => (
+            <option key={code} value={code}>
+              {code} · {SUPPORTED_LOCALES[code] || code}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className={styles.field}>
+        <span>Currency</span>
+        <select
+          value={form.currency}
+          onChange={(e) => updateField('currency', e.target.value)}
+        >
+          {SUPPORTED_CURRENCIES.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+      </label>
+    </>
+  );
+}
+
+function AnalyticsTab({
+  form,
+  updateField,
+  updateChannelLabel,
+}: {
+  form: FormState;
+  updateField: <K extends keyof FormState>(k: K, v: FormState[K]) => void;
+  updateChannelLabel: (key: string, value: string) => void;
+}) {
+  return (
+    <>
+      <h2 className={styles.tabTitle}>Analytics & labels</h2>
+      <p className={styles.tabHint}>dataLayer events and OTA channel labels.</p>
+
+      <label className={styles.toggleLabel}>
+        <input
+          type="checkbox"
+          checked={form.analyticsEnabled}
+          onChange={(e) => updateField('analyticsEnabled', e.target.checked)}
+        />
+        <span>Enable dataLayer push</span>
+      </label>
+
+      {form.analyticsEnabled && (
+        <>
+          <label className={styles.field}>
+            <span>dataLayer variable name</span>
+            <input
+              type="text"
+              value={form.dataLayerName}
+              onChange={(e) => updateField('dataLayerName', e.target.value)}
+            />
+          </label>
+          <label className={styles.field}>
+            <span>Event prefix</span>
+            <input
+              type="text"
+              value={form.eventPrefix}
+              onChange={(e) => updateField('eventPrefix', e.target.value)}
+            />
+          </label>
+        </>
+      )}
+
+      <h3 className={styles.subTitle}>OTA labels</h3>
+      <div className={styles.twoCol}>
+        {Object.entries(form.channelLabels).map(([key, value]) => (
+          <label key={key} className={styles.field}>
+            <span>{key}</span>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => updateChannelLabel(key, e.target.value)}
+            />
+          </label>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function PublishTab({
+  hotelId,
+  config,
+  publishState,
+  onPublish,
+  onDownload,
+}: {
+  hotelId: string;
+  config: object;
+  publishState: {
+    status: 'idle' | 'publishing' | 'success' | 'error';
+    message?: string;
+    sha?: string;
+  };
+  onPublish: () => void;
+  onDownload: () => void;
+}) {
+  return (
+    <>
+      <h2 className={styles.tabTitle}>Publish</h2>
+      <p className={styles.tabHint}>
+        Push the config to GitHub, where the widget will fetch it.
+      </p>
+
+      <div className={styles.publishActions}>
+        <button
+          type="button"
+          onClick={onPublish}
+          disabled={publishState.status === 'publishing'}
+          className={styles.primaryBtn}
+        >
+          {publishState.status === 'publishing'
+            ? '⏳ Publishing...'
+            : '🚀 Publish to GitHub'}
+        </button>
+        <button type="button" onClick={onDownload} className={styles.ghostBtn}>
+          ⬇️ Download JSON
+        </button>
+      </div>
+
+      {publishState.status === 'success' && (
+        <div className={styles.successBox}>
+          <strong>✅ Published!</strong>
+          <div>
+            Commit <code>{publishState.sha}</code>. Available in 1–2 min after
+            GitHub Actions finishes.
+          </div>
+          <div className={styles.embedCode}>
+            <strong>Embed code:</strong>
+            <pre>
+              {`<script async src="https://vturlin.github.io/best-price-widget/widget.js?id=${hotelId}"></script>`}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {publishState.status === 'error' && (
+        <div className={styles.errorBox}>
+          <strong>❌ Failed:</strong> {publishState.message}
+        </div>
+      )}
+
+      <details className={styles.jsonDetails}>
+        <summary>📄 Preview JSON</summary>
+        <pre>{JSON.stringify(config, null, 2)}</pre>
+      </details>
+    </>
   );
 }
