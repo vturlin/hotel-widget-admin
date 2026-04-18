@@ -8,7 +8,6 @@ import {
   TABS,
 } from './constants.js';
 import {
-  generateHotelId,
   parseRoomsText,
   buildConfig,
   buildPreviewUrl,
@@ -46,8 +45,13 @@ export default function App() {
     return (
       <div className={styles.authWrap}>
         <form className={styles.authCard} onSubmit={handleLogin}>
-          <h1>🔐 Hotel Widget Admin</h1>
-          <p>Enter the admin password to continue.</p>
+          <img
+            src="https://www.d-edge.com/wp-content/themes/d-edge/img/logo_d-edge.svg"
+            alt="D-EDGE"
+            className={styles.authLogo}
+          />
+          <h1>Hotel Widget Admin</h1>
+          <p>Sign in to continue</p>
           <input
             type="password"
             value={pwdInput}
@@ -56,7 +60,7 @@ export default function App() {
             autoFocus
           />
           {authError && <div className={styles.authError}>{authError}</div>}
-          <button type="submit">Log in</button>
+          <button type="submit">Sign in</button>
         </form>
       </div>
     );
@@ -71,9 +75,10 @@ export default function App() {
 
 function AdminUI() {
   const [form, setForm] = useState({
-    hotelId: generateHotelId(),
+    hotelId: '',
     hotelName: 'Hôtel Demo',
     hotelDomain: 'hotel-client.com',
+    logoUrl: '',
     csvUrl: 'https://docs.google.com/spreadsheets/d/e/.../pub?output=csv',
     rooms: [
       { id: 'deluxe-king', name: 'Deluxe King Room' },
@@ -83,13 +88,6 @@ function AdminUI() {
     defaultRoomId: 'deluxe-king',
     reserveUrl:
       'https://book.hotel-client.com/?arrive={checkIn}&depart={checkOut}&room={roomId}',
-    currency: 'EUR',
-    position: 'bottom-right',
-    brandColor: '#8b5a3c',
-    backgroundColor: '#faf7f2',
-    logoUrl: '',
-    enabledLocales: ['en', 'fr', 'es', 'de', 'it'],
-    defaultLocale: 'en',
     channelLabels: {
       booking: 'Booking.com',
       expedia: 'Expedia',
@@ -97,12 +95,17 @@ function AdminUI() {
       hotels_com: 'Hotels.com',
       agoda: 'Agoda',
     },
-    analyticsEnabled: true,
-    dataLayerName: 'dataLayer',
-    eventPrefix: 'hotel_widget_',
-     autoOpenMode: 'time',
+    currency: 'EUR',
+    position: 'bottom-right',
+    brandColor: '#8b5a3c',
+    backgroundColor: '#faf7f2',
+    enabledLocales: ['en', 'fr', 'es', 'de', 'it'],
+    defaultLocale: 'en',
+    autoOpenMode: 'time',
     autoOpenDelay: 8,
     autoOpenScrollPercent: 50,
+    analyticsEnabled: true,
+    dataLayerName: 'dataLayer',
   });
 
   const [roomsText, setRoomsText] = useState(
@@ -111,6 +114,7 @@ function AdminUI() {
   const [device, setDevice] = useState('desktop');
   const [activeTab, setActiveTab] = useState('identity');
   const [publishState, setPublishState] = useState({ status: 'idle' });
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const parsed = parseRoomsText(roomsText);
@@ -159,6 +163,13 @@ function AdminUI() {
   }
 
   async function handlePublish() {
+    if (!form.hotelId || !form.hotelId.trim()) {
+      setPublishState({
+        status: 'error',
+        message: 'Hotel ID is required before publishing.',
+      });
+      return;
+    }
     setPublishState({ status: 'publishing' });
     try {
       const res = await fetch('/api/publish', {
@@ -168,11 +179,16 @@ function AdminUI() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Publish failed');
-      setPublishState({
-        status: 'success',
-        sha: data.commit?.sha?.substring(0, 7),
+      // Log details to the console for debugging; UI stays clean.
+      console.info('[admin] published', {
+        hotelId: form.hotelId,
+        commitSha: data.commit?.sha,
+        commitUrl: data.commit?.html_url,
+        fullResponse: data,
       });
+      setPublishState({ status: 'success' });
     } catch (err) {
+      console.error('[admin] publish failed', err);
       setPublishState({ status: 'error', message: err.message });
     }
   }
@@ -184,14 +200,21 @@ function AdminUI() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${form.hotelId}.json`;
+    a.download = `${form.hotelId || 'widget-config'}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
+  function copyEmbedCode() {
+    const code = `<script async src="https://vturlin.github.io/best-price-widget/widget.js?id=${form.hotelId}"></script>`;
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
   return (
     <div className={styles.app}>
-      {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <img
@@ -200,14 +223,15 @@ function AdminUI() {
             className={styles.headerLogo}
           />
           <span className={styles.headerDivider} />
-          <h1 className={styles.headerTitle}>Hotel Widget — Config Manager</h1>
+          <h1 className={styles.headerTitle}>Hotel Widget Config Manager</h1>
         </div>
         <div className={styles.headerRight}>
-          <span className={styles.idBadge}>{form.hotelId}</span>
+          {form.hotelId && (
+            <span className={styles.idBadge}>{form.hotelId}</span>
+          )}
         </div>
       </header>
 
-      {/* Tabs */}
       <nav className={styles.tabs}>
         {TABS.map((tab) => (
           <button
@@ -217,13 +241,11 @@ function AdminUI() {
             }`}
             onClick={() => setActiveTab(tab.key)}
           >
-            <span className={styles.tabIcon}>{tab.icon}</span>
             {tab.label}
           </button>
         ))}
       </nav>
 
-      {/* Main split: preview centered + config right */}
       <div className={styles.main}>
         <div className={styles.previewArea}>
           <PreviewFrame
@@ -245,6 +267,7 @@ function AdminUI() {
                 updateField={updateField}
                 roomsText={roomsText}
                 setRoomsText={setRoomsText}
+                updateChannelLabel={updateChannelLabel}
               />
             )}
             {activeTab === 'appearance' && (
@@ -258,19 +281,16 @@ function AdminUI() {
               />
             )}
             {activeTab === 'analytics' && (
-              <AnalyticsTab
-                form={form}
-                updateField={updateField}
-                updateChannelLabel={updateChannelLabel}
-              />
+              <AnalyticsTab form={form} updateField={updateField} />
             )}
             {activeTab === 'publish' && (
               <PublishTab
                 hotelId={form.hotelId}
-                config={config}
                 publishState={publishState}
+                copied={copied}
                 onPublish={handlePublish}
                 onDownload={downloadJson}
+                onCopyEmbed={copyEmbedCode}
               />
             )}
           </div>
@@ -288,14 +308,12 @@ function PreviewFrame({ previewUrl, viewport, device, setDevice }) {
   const wrapRef = useRef(null);
   const [available, setAvailable] = useState({ w: 800, h: 600 });
 
-  // Measure available space on mount and on window resize
   useEffect(() => {
     if (!wrapRef.current) return;
     const el = wrapRef.current;
 
     const measure = () => {
       const rect = el.getBoundingClientRect();
-      // Reserve ~80px at the bottom for the device toggle
       setAvailable({
         w: Math.max(320, rect.width - 40),
         h: Math.max(400, rect.height - 80),
@@ -312,15 +330,12 @@ function PreviewFrame({ previewUrl, viewport, device, setDevice }) {
     };
   }, []);
 
-  // In mobile mode, we cap the width to look like a phone. In desktop,
-  // we use the full available width.
   const maxWidth  = device === 'desktop' ? available.w : Math.min(320, available.w);
   const maxHeight = available.h;
 
   const scaleByWidth  = maxWidth / viewport.w;
   const scaleByHeight = maxHeight / viewport.h;
   const scale = Math.min(scaleByWidth, scaleByHeight, 1);
-  // cap at 1 so we never upscale beyond the iframe's native size
 
   const displayW = viewport.w * scale;
   const displayH = viewport.h * scale;
@@ -357,13 +372,13 @@ function PreviewFrame({ previewUrl, viewport, device, setDevice }) {
           className={device === 'desktop' ? styles.deviceActive : ''}
           onClick={() => setDevice('desktop')}
         >
-          🖥️ Desktop
+          Desktop
         </button>
         <button
           className={device === 'mobile' ? styles.deviceActive : ''}
           onClick={() => setDevice('mobile')}
         >
-          📱 Mobile
+          Mobile
         </button>
       </div>
     </div>
@@ -378,24 +393,22 @@ function IdentityTab({ form, updateField }) {
   return (
     <>
       <h2 className={styles.tabTitle}>Identity</h2>
-      <p className={styles.tabHint}>Basic information about the hotel.</p>
+      <p className={styles.tabHint}>
+        Basic information about the hotel and how to identify it.
+      </p>
 
       <label className={styles.field}>
         <span>Hotel ID</span>
-        <div className={styles.inputRow}>
-          <input
-            type="text"
-            value={form.hotelId}
-            onChange={(e) => updateField('hotelId', e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={() => updateField('hotelId', generateHotelId())}
-            className={styles.ghostBtn}
-          >
-            🎲
-          </button>
-        </div>
+        <input
+          type="text"
+          value={form.hotelId}
+          onChange={(e) => updateField('hotelId', e.target.value)}
+          placeholder="e.g. hm_myhotel_paris"
+        />
+        <small>
+          Unique identifier used to fetch the config. Lowercase,
+          alphanumeric, dashes and underscores only.
+        </small>
       </label>
 
       <label className={styles.field}>
@@ -413,19 +426,31 @@ function IdentityTab({ form, updateField }) {
           type="text"
           value={form.hotelDomain}
           onChange={(e) => updateField('hotelDomain', e.target.value)}
+          placeholder="hotel-client.com"
         />
         <small>Stored for reference — not used by the widget yet.</small>
+      </label>
+
+      <label className={styles.field}>
+        <span>Logo URL (optional)</span>
+        <input
+          type="text"
+          value={form.logoUrl}
+          onChange={(e) => updateField('logoUrl', e.target.value)}
+          placeholder="https://..."
+        />
+        <small>If provided, shown in the widget header instead of the hotel name.</small>
       </label>
     </>
   );
 }
 
-function DataTab({ form, updateField, roomsText, setRoomsText }) {
+function DataTab({ form, updateField, roomsText, setRoomsText, updateChannelLabel }) {
   return (
     <>
       <h2 className={styles.tabTitle}>Data source</h2>
       <p className={styles.tabHint}>
-        Google Sheet CSV URL and the list of rooms to offer.
+        Pricing CSV, room inventory, and channel labels.
       </p>
 
       <label className={styles.field}>
@@ -478,6 +503,24 @@ function DataTab({ form, updateField, roomsText, setRoomsText }) {
           <code>{'{roomId}'}</code> as placeholders.
         </small>
       </label>
+
+      <h3 className={styles.subTitle}>OTA channel labels</h3>
+      <p className={styles.tabHint}>
+        Labels shown next to each OTA price. The key on the left must match
+        the column name in your CSV.
+      </p>
+      <div className={styles.twoCol}>
+        {Object.entries(form.channelLabels).map(([key, value]) => (
+          <label key={key} className={styles.field}>
+            <span>{key}</span>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => updateChannelLabel(key, e.target.value)}
+            />
+          </label>
+        ))}
+      </div>
     </>
   );
 }
@@ -486,7 +529,7 @@ function AppearanceTab({ form, updateField }) {
   return (
     <>
       <h2 className={styles.tabTitle}>Appearance</h2>
-      <p className={styles.tabHint}>Colors and position of the widget.</p>
+      <p className={styles.tabHint}>Colors, position, and opening behaviour.</p>
 
       <div className={styles.twoCol}>
         <label className={styles.field}>
@@ -511,7 +554,7 @@ function AppearanceTab({ form, updateField }) {
       </div>
 
       <label className={styles.field}>
-        <span>Position</span>
+        <span>Position on screen</span>
         <select
           value={form.position}
           onChange={(e) => updateField('position', e.target.value)}
@@ -524,14 +567,8 @@ function AppearanceTab({ form, updateField }) {
         </select>
       </label>
 
-      <label className={styles.field}>
-        <span>Logo URL (optional)</span>
-        <input
-          type="text"
-          value={form.logoUrl}
-          onChange={(e) => updateField('logoUrl', e.target.value)}
-        />
-      </label>
+      <h3 className={styles.subTitle}>Auto-open behaviour</h3>
+
       <label className={styles.field}>
         <span>Auto-open trigger</span>
         <select
@@ -541,7 +578,7 @@ function AppearanceTab({ form, updateField }) {
           <option value="disabled">Disabled</option>
           <option value="time">After a delay</option>
           <option value="scroll">When user scrolls</option>
-          <option value="time_or_scroll">Delay OR scroll (first wins)</option>
+          <option value="time_or_scroll">Delay or scroll (first wins)</option>
         </select>
         <small>
           When the widget opens itself for the first time in the session.
@@ -586,7 +623,7 @@ function AppearanceTab({ form, updateField }) {
 function LanguagesTab({ form, updateField, toggleLocale }) {
   return (
     <>
-      <h2 className={styles.tabTitle}>Languages & currency</h2>
+      <h2 className={styles.tabTitle}>Languages &amp; currency</h2>
       <p className={styles.tabHint}>Click a chip to toggle a language.</p>
 
       <div className={styles.field}>
@@ -638,12 +675,13 @@ function LanguagesTab({ form, updateField, toggleLocale }) {
   );
 }
 
-function AnalyticsTab({ form, updateField, updateChannelLabel }) {
+function AnalyticsTab({ form, updateField }) {
   return (
     <>
-      <h2 className={styles.tabTitle}>Analytics & labels</h2>
+      <h2 className={styles.tabTitle}>Analytics</h2>
       <p className={styles.tabHint}>
-        dataLayer events and OTA channel labels.
+        DataLayer events pushed when users interact with the widget. Events
+        use the prefix <code>dedge_widget_</code>.
       </p>
 
       <label className={styles.toggleLabel}>
@@ -656,93 +694,86 @@ function AnalyticsTab({ form, updateField, updateChannelLabel }) {
       </label>
 
       {form.analyticsEnabled && (
-        <>
-          <label className={styles.field}>
-            <span>dataLayer variable name</span>
-            <input
-              type="text"
-              value={form.dataLayerName}
-              onChange={(e) => updateField('dataLayerName', e.target.value)}
-            />
-          </label>
-          <label className={styles.field}>
-            <span>Event prefix</span>
-            <input
-              type="text"
-              value={form.eventPrefix}
-              onChange={(e) => updateField('eventPrefix', e.target.value)}
-            />
-          </label>
-        </>
+        <label className={styles.field}>
+          <span>DataLayer variable name</span>
+          <input
+            type="text"
+            value={form.dataLayerName}
+            onChange={(e) => updateField('dataLayerName', e.target.value)}
+          />
+          <small>
+            Name of the global array. Default <code>dataLayer</code> (GTM standard).
+          </small>
+        </label>
       )}
-
-      <h3 className={styles.subTitle}>OTA labels</h3>
-      <div className={styles.twoCol}>
-        {Object.entries(form.channelLabels).map(([key, value]) => (
-          <label key={key} className={styles.field}>
-            <span>{key}</span>
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => updateChannelLabel(key, e.target.value)}
-            />
-          </label>
-        ))}
-      </div>
     </>
   );
 }
 
-function PublishTab({ hotelId, config, publishState, onPublish, onDownload }) {
+function PublishTab({ hotelId, publishState, copied, onPublish, onDownload, onCopyEmbed }) {
+  const canPublish = hotelId && hotelId.trim();
   return (
     <>
       <h2 className={styles.tabTitle}>Publish</h2>
       <p className={styles.tabHint}>
-        Push the config to GitHub, where the widget will fetch it.
+        Save the configuration so the widget can load it on the hotel website.
       </p>
 
       <div className={styles.publishActions}>
         <button
           type="button"
           onClick={onPublish}
-          disabled={publishState.status === 'publishing'}
+          disabled={publishState.status === 'publishing' || !canPublish}
           className={styles.primaryBtn}
         >
-          {publishState.status === 'publishing'
-            ? '⏳ Publishing...'
-            : '🚀 Publish to GitHub'}
+          {publishState.status === 'publishing' ? 'Publishing…' : 'Publish'}
         </button>
         <button type="button" onClick={onDownload} className={styles.ghostBtn}>
-          ⬇️ Download JSON
+          Download JSON
         </button>
       </div>
 
+      {!canPublish && (
+        <div className={styles.hintBox}>
+          Set a Hotel ID in the Identity tab before publishing.
+        </div>
+      )}
+
       {publishState.status === 'success' && (
         <div className={styles.successBox}>
-          <strong>✅ Published!</strong>
-          <div>
-            Commit <code>{publishState.sha}</code>. Available in 1–2 min after
-            GitHub Actions finishes.
-          </div>
-          <div className={styles.embedCode}>
-            <strong>Embed code:</strong>
-            <pre>
-              {`<script async src="https://vturlin.github.io/best-price-widget/widget.js?id=${hotelId}"></script>`}
-            </pre>
-          </div>
+          <strong>Configuration published</strong>
+          <p>The widget will pick up the new config in 1–2 minutes.</p>
         </div>
       )}
 
       {publishState.status === 'error' && (
         <div className={styles.errorBox}>
-          <strong>❌ Failed:</strong> {publishState.message}
+          <strong>Publish failed</strong>
+          <p>{publishState.message}</p>
         </div>
       )}
 
-      <details className={styles.jsonDetails}>
-        <summary>📄 Preview JSON</summary>
-        <pre>{JSON.stringify(config, null, 2)}</pre>
-      </details>
+      {canPublish && (
+        <>
+          <h3 className={styles.subTitle}>Embed code</h3>
+          <p className={styles.tabHint}>
+            Paste this snippet on the hotel website (just before <code>&lt;/body&gt;</code>)
+            or push it through Google Tag Manager.
+          </p>
+          <div className={styles.embedCodeWrap}>
+            <pre className={styles.embedCode}>
+{`<script async src="https://vturlin.github.io/best-price-widget/widget.js?id=${hotelId}"></script>`}
+            </pre>
+            <button
+              type="button"
+              onClick={onCopyEmbed}
+              className={styles.ghostBtn}
+            >
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+        </>
+      )}
     </>
   );
 }

@@ -1,51 +1,52 @@
 /* =============================================================================
-   Hotel Widget Admin — Design inspired by D-EDGE
-   Corporate chic: airy, elegant, navy accents, lots of white space
+   Hotel Widget Admin — D-EDGE inspired design
+   Professional B2B aesthetic: deep purple brand, dense typography, clean lines
    ============================================================================= */
 
-/* Import Inter font for that premium SaaS look */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
   /* Backgrounds */
-  --bg-app:         #f7f8fa;
+  --bg-app:         #f8f7fb;
   --bg-panel:       #ffffff;
-  --bg-subtle:      #f0f2f5;
-  --bg-hover:       #f1f5f9;
+  --bg-subtle:      #f3f1f6;
+  --bg-hover:       #eeeaf4;
 
   /* Text */
-  --text-primary:   #0f172a;
-  --text-secondary: #475569;
-  --text-muted:     #94a3b8;
+  --text-primary:   #1a1333;
+  --text-secondary: #4b4566;
+  --text-muted:     #8a829e;
 
-  /* Brand — D-EDGE navy */
-  --brand:          #1e3a8a;
-  --brand-hover:    #1e40af;
-  --brand-active:   #1d3478;
-  --brand-light:    #dbeafe;
-  --brand-subtle:   #eff6ff;
+  /* Brand — D-EDGE purple */
+  --brand:          #4c1d95;
+  --brand-hover:    #3b1378;
+  --brand-active:   #2e0e5f;
+  --brand-light:    #ddd6fe;
+  --brand-subtle:   #f1edfd;
 
   /* Accent */
-  --accent:         #f97316;
+  --accent:         #f59e0b;
 
   /* Borders */
-  --border:         #e2e8f0;
-  --border-strong:  #cbd5e1;
+  --border:         #e4e0ec;
+  --border-strong:  #c9c1d7;
 
   /* Semantic */
   --success:        #059669;
   --success-bg:     #d1fae5;
   --error:          #dc2626;
   --error-bg:       #fee2e2;
+  --hint-bg:        #fef3c7;
+  --hint-border:    #fcd34d;
 
   /* Shadows */
-  --shadow-sm:      0 1px 2px 0 rgba(15, 23, 42, 0.05);
-  --shadow-md:      0 4px 6px -1px rgba(15, 23, 42, 0.06),
-                    0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-lg:      0 10px 15px -3px rgba(15, 23, 42, 0.08),
-                    0 4px 6px -4px rgba(15, 23, 42, 0.04);
-  --shadow-xl:      0 20px 25px -5px rgba(15, 23, 42, 0.1),
-                    0 8px 10px -6px rgba(15, 23, 42, 0.04);
+  --shadow-sm:      0 1px 2px 0 rgba(26, 19, 51, 0.06);
+  --shadow-md:      0 4px 6px -1px rgba(26, 19, 51, 0.08),
+                    0 2px 4px -2px rgba(26, 19, 51, 0.05);
+  --shadow-lg:      0 10px 15px -3px rgba(26, 19, 51, 0.1),
+                    0 4px 6px -4px rgba(26, 19, 51, 0.05);
+  --shadow-xl:      0 20px 25px -5px rgba(26, 19, 51, 0.12),
+                    0 8px 10px -6px rgba(26, 19, 51, 0.05);
 
   /* Radii */
   --radius-sm:      4px;
@@ -69,10 +70,12 @@ html, body, #root {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
 }
 
 button, input, select, textarea { font-family: inherit; }
 button { cursor: pointer; border: none; background: none; }
+code { font-family: ui-monospace, 'SF Mono', Consolas, monospace; }
 
 /* ========== App shell ================================================= */
 
@@ -90,7 +93,7 @@ button { cursor: pointer; border: none; background: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 32px;
+  padding: 12px 32px;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -104,23 +107,23 @@ button { cursor: pointer; border: none; background: none; }
 }
 
 .headerLogo {
-  height: 28px;
+  height: 26px;
   width: auto;
   display: block;
 }
 
 .headerDivider {
-  height: 24px;
+  height: 22px;
   width: 1px;
   background: var(--border-strong);
 }
 
 .headerTitle {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   margin: 0;
-  color: var(--text-secondary);
-  letter-spacing: -0.005em;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
 .headerRight {
@@ -130,21 +133,21 @@ button { cursor: pointer; border: none; background: none; }
 }
 
 .idBadge {
-  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
-  font-size: 11px;
-  padding: 5px 10px;
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 12px;
+  padding: 5px 12px;
   background: var(--brand-subtle);
   border: 1px solid var(--brand-light);
   border-radius: var(--radius);
   color: var(--brand);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* ========== Tabs ====================================================== */
 
 .tabs {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   padding: 0 32px;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
@@ -154,8 +157,7 @@ button { cursor: pointer; border: none; background: none; }
 .tab {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 14px 18px;
+  padding: 14px 20px;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
@@ -176,8 +178,6 @@ button { cursor: pointer; border: none; background: none; }
   font-weight: 600;
 }
 
-.tabIcon { font-size: 14px; }
-
 /* ========== Main layout =============================================== */
 
 .main {
@@ -186,7 +186,6 @@ button { cursor: pointer; border: none; background: none; }
   min-height: 0;
 }
 
-/* Preview area: centered, fixed */
 .previewArea {
   flex: 1;
   display: flex;
@@ -197,7 +196,6 @@ button { cursor: pointer; border: none; background: none; }
   background: var(--bg-app);
 }
 
-/* Config panel: right side, scrollable */
 .configPanel {
   width: 440px;
   flex-shrink: 0;
@@ -206,11 +204,8 @@ button { cursor: pointer; border: none; background: none; }
   overflow-y: auto;
 }
 
-.configInner {
-  padding: 32px;
-}
+.configInner { padding: 28px 32px 60px; }
 
-/* Clean scrollbar */
 .configPanel::-webkit-scrollbar { width: 8px; }
 .configPanel::-webkit-scrollbar-track { background: transparent; }
 .configPanel::-webkit-scrollbar-thumb {
@@ -225,6 +220,7 @@ button { cursor: pointer; border: none; background: none; }
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 20px;
   width: 100%;
   height: 100%;
@@ -265,7 +261,6 @@ button { cursor: pointer; border: none; background: none; }
 
 .browserViewport iframe { display: block; }
 
-/* Device toggle — clean pill */
 .deviceToggle {
   display: inline-flex;
   background: var(--bg-panel);
@@ -276,16 +271,13 @@ button { cursor: pointer; border: none; background: none; }
 }
 
 .deviceToggle button {
-  padding: 7px 16px;
+  padding: 7px 18px;
   background: transparent;
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
   border-radius: 999px;
   transition: background 160ms, color 160ms;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .deviceToggle button:hover { color: var(--text-primary); }
@@ -298,8 +290,8 @@ button { cursor: pointer; border: none; background: none; }
 /* ========== Config content ============================================ */
 
 .tabTitle {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   margin: 0 0 6px;
   color: var(--text-primary);
   letter-spacing: -0.02em;
@@ -313,11 +305,14 @@ button { cursor: pointer; border: none; background: none; }
 }
 
 .subTitle {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 32px 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 36px 0 14px;
   color: var(--text-primary);
-  letter-spacing: -0.01em;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
 }
 
 .field {
@@ -341,7 +336,7 @@ button { cursor: pointer; border: none; background: none; }
   width: 100%;
   padding: 10px 13px;
   background: var(--bg-panel);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   color: var(--text-primary);
   font-size: 14px;
@@ -361,19 +356,19 @@ button { cursor: pointer; border: none; background: none; }
   height: 44px;
   padding: 4px;
   background: var(--bg-panel);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   cursor: pointer;
 }
 
-.field input[type="color"]:hover { border-color: var(--border-strong); }
+.field input[type="color"]:hover { border-color: var(--text-muted); }
 
 .field textarea {
   resize: vertical;
   font-family: ui-monospace, 'SF Mono', Consolas, monospace;
   font-size: 12.5px;
   line-height: 1.6;
-  min-height: 100px;
+  min-height: 110px;
 }
 
 .field small {
@@ -384,14 +379,14 @@ button { cursor: pointer; border: none; background: none; }
   line-height: 1.5;
 }
 
-.field small code {
+.field small code,
+.tabHint code {
   background: var(--bg-subtle);
   padding: 2px 6px;
   border-radius: 3px;
   font-size: 11.5px;
-  color: var(--text-secondary);
+  color: var(--brand);
   margin: 0 2px;
-  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
 }
 
 .twoCol {
@@ -412,12 +407,13 @@ button { cursor: pointer; border: none; background: none; }
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin-top: 8px;
 }
 
 .chip {
   padding: 7px 12px;
   background: var(--bg-panel);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   color: var(--text-secondary);
   font-size: 12px;
@@ -427,7 +423,7 @@ button { cursor: pointer; border: none; background: none; }
 
 .chip:hover {
   color: var(--text-primary);
-  border-color: var(--border-strong);
+  border-color: var(--text-muted);
   background: var(--bg-hover);
 }
 
@@ -442,7 +438,7 @@ button { cursor: pointer; border: none; background: none; }
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 13px 14px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -506,6 +502,7 @@ button { cursor: pointer; border: none; background: none; }
   font-size: 14px;
   font-weight: 500;
   transition: background 140ms, border-color 140ms;
+  white-space: nowrap;
 }
 
 .ghostBtn:hover {
@@ -519,85 +516,81 @@ button { cursor: pointer; border: none; background: none; }
   margin-bottom: 20px;
 }
 
-/* Success / error boxes */
+/* Feedback boxes */
 .successBox {
-  padding: 16px;
+  padding: 16px 18px;
   background: var(--success-bg);
-  border: 1px solid var(--success);
+  border-left: 3px solid var(--success);
   border-radius: var(--radius);
-  color: var(--text-primary);
-  font-size: 13px;
   margin-bottom: 20px;
 }
 
-.successBox strong { color: var(--success); }
-.successBox > div { margin-top: 8px; color: var(--text-secondary); }
+.successBox strong {
+  color: var(--success);
+  font-size: 14px;
+  display: block;
+  margin-bottom: 4px;
+}
 
-.successBox code {
-  background: white;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 12px;
-  color: var(--text-primary);
-  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+.successBox p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 .errorBox {
-  padding: 16px;
+  padding: 16px 18px;
   background: var(--error-bg);
-  border: 1px solid var(--error);
+  border-left: 3px solid var(--error);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+}
+
+.errorBox strong {
+  color: var(--error);
+  font-size: 14px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.errorBox p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.hintBox {
+  padding: 12px 14px;
+  background: var(--hint-bg);
+  border: 1px solid var(--hint-border);
   border-radius: var(--radius);
   color: var(--text-primary);
   font-size: 13px;
   margin-bottom: 20px;
 }
 
-.errorBox strong { color: var(--error); }
-
-.embedCode {
-  margin-top: 14px;
+/* Embed code */
+.embedCodeWrap {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 10px;
 }
 
-.embedCode pre {
-  background: white;
+.embedCode {
+  flex: 1;
+  background: var(--bg-subtle);
   border: 1px solid var(--border);
-  padding: 12px;
+  padding: 12px 14px;
   border-radius: var(--radius);
   font-size: 12px;
   overflow-x: auto;
-  margin: 8px 0 0;
+  margin: 0;
   white-space: pre-wrap;
   word-break: break-all;
   color: var(--text-primary);
   font-family: ui-monospace, 'SF Mono', Consolas, monospace;
-}
-
-/* JSON details */
-.jsonDetails {
-  margin-top: 28px;
-  font-size: 13px;
-}
-
-.jsonDetails summary {
-  cursor: pointer;
-  color: var(--text-secondary);
-  padding: 10px 0;
-  font-weight: 500;
-  user-select: none;
-}
-
-.jsonDetails summary:hover { color: var(--text-primary); }
-
-.jsonDetails pre {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  padding: 14px;
-  border-radius: var(--radius);
-  font-size: 11.5px;
-  overflow-x: auto;
-  color: var(--text-secondary);
-  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
 /* ========== Auth screen =============================================== */
@@ -608,7 +601,7 @@ button { cursor: pointer; border: none; background: none; }
   justify-content: center;
   min-height: 100vh;
   padding: 20px;
-  background: linear-gradient(135deg, var(--bg-app) 0%, var(--brand-subtle) 100%);
+  background: var(--bg-app);
 }
 
 .authCard {
@@ -620,8 +613,15 @@ button { cursor: pointer; border: none; background: none; }
   border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   box-shadow: var(--shadow-xl);
+}
+
+.authLogo {
+  height: 36px;
+  width: auto;
+  align-self: center;
+  margin-bottom: 8px;
 }
 
 .authCard h1 {
@@ -636,14 +636,14 @@ button { cursor: pointer; border: none; background: none; }
 .authCard p {
   font-size: 14px;
   color: var(--text-secondary);
-  margin: 0;
+  margin: 0 0 8px;
   text-align: center;
 }
 
 .authCard input {
   padding: 12px 14px;
   background: var(--bg-panel);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   color: var(--text-primary);
   font-size: 14px;

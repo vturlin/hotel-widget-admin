@@ -46,7 +46,6 @@ export function buildConfig(form) {
     analytics: {
       enabled: form.analyticsEnabled,
       dataLayerName: form.dataLayerName,
-      eventPrefix: form.eventPrefix,
     },
     autoOpenMode: form.autoOpenMode || 'disabled',
     autoOpenDelay: form.autoOpenDelay || 0,

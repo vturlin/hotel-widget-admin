@@ -23,10 +23,10 @@ export const WIDGET_PREVIEW_URL =
   'https://vturlin.github.io/best-price-widget/demo.html';
 
 export const TABS = [
-  { key: 'identity',    label: 'Identity',    icon: '🆔' },
-  { key: 'data',        label: 'Data',        icon: '📊' },
-  { key: 'appearance',  label: 'Appearance',  icon: '🎨' },
-  { key: 'languages',   label: 'Languages',   icon: '🌍' },
-  { key: 'analytics',   label: 'Analytics',   icon: '📈' },
-  { key: 'publish',     label: 'Publish',     icon: '🚀' },
+  { key: 'identity',   label: 'Identity' },
+  { key: 'data',       label: 'Data' },
+  { key: 'appearance', label: 'Appearance' },
+  { key: 'languages',  label: 'Languages' },
+  { key: 'analytics',  label: 'Analytics' },
+  { key: 'publish',    label: 'Publish' },
 ];
