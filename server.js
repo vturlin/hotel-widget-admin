@@ -41,6 +41,59 @@ app.post('/api/auth', (req, res) => {
   return res.status(401).json({ error: 'Wrong password' });
 });
 
+// ─── /api/current-config/:hotelId ───────────────────────────────────
+// Fetches the config currently published on GitHub, if any.
+// Returns { exists: false } if this hotelId hasn't been published yet,
+// so the client can show a "new publication" state rather than a diff.
+app.get('/api/current-config/:hotelId', async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+    if (!/^[a-zA-Z0-9_-]+$/.test(hotelId)) {
+      return res.status(400).json({ error: 'Invalid hotelId' });
+    }
+
+    const token = process.env.GITHUB_TOKEN;
+    const owner = process.env.GITHUB_OWNER;
+    const repo = process.env.GITHUB_REPO;
+    const branch = process.env.GITHUB_BRANCH || 'main';
+
+    if (!token || !owner || !repo) {
+      return res.status(500).json({ error: 'GitHub env vars not set' });
+    }
+
+    const filePath = `public/configs/${hotelId}.json`;
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}?ref=${branch}`;
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'hotel-widget-admin',
+      },
+    });
+
+    if (response.status === 404) {
+      return res.json({ exists: false });
+    }
+    if (!response.ok) {
+      const errTxt = await response.text();
+      return res
+        .status(response.status)
+        .json({ error: `GitHub API error: ${errTxt.slice(0, 300)}` });
+    }
+
+    const data = await response.json();
+    // Content is base64-encoded JSON
+    const decoded = Buffer.from(data.content, 'base64').toString('utf-8');
+    const config = JSON.parse(decoded);
+    return res.json({ exists: true, config });
+  } catch (err) {
+    console.error('[api/current-config]', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── /api/publish ───────────────────────────────────────────────────
 app.post('/api/publish', async (req, res) => {
   try {
