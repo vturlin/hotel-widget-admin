@@ -55,16 +55,6 @@ export function buildConfig(form) {
  * Encode the config as urlsafe base64 and build the preview URL.
  * We UTF-8 encode first because native btoa can't handle non-ASCII.
  */
-export function buildPreviewUrl(previewBase, config) {
-  const json = JSON.stringify(config);
-  const bytes = new TextEncoder().encode(json);
-  let binary = '';
-  bytes.forEach((b) => {
-    binary += String.fromCharCode(b);
-  });
-  const b64 = btoa(binary)
-    .replace(/=+$/, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
-  return `${previewBase}?preview=${b64}`;
+export function buildPreviewUrl(baseUrl /* , config — unused for now */) {
+  return `${baseUrl}?id=preview`;
 }
