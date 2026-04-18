@@ -189,7 +189,6 @@ function AdminUI() {
   return (
     <div className={styles.app}>
       {/* Header */}
-      {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <img
@@ -283,8 +282,8 @@ function AdminUI() {
 // ──────────────────────────────────────────────────────────────────────
 
 function PreviewFrame({ previewUrl, viewport, device, setDevice }) {
-  const wrapRef = React.useRef(null);
-  const [available, setAvailable] = React.useState({ w: 800, h: 600 });
+  const wrapRef = useRef(null);
+  const [available, setAvailable] = useState({ w: 800, h: 600 });
 
   // Measure available space on mount and on window resize
   useEffect(() => {
