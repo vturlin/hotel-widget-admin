@@ -100,7 +100,9 @@ function AdminUI() {
     analyticsEnabled: true,
     dataLayerName: 'dataLayer',
     eventPrefix: 'hotel_widget_',
+     autoOpenMode: 'time',
     autoOpenDelay: 8,
+    autoOpenScrollPercent: 50,
   });
 
   const [roomsText, setRoomsText] = useState(
@@ -531,24 +533,52 @@ function AppearanceTab({ form, updateField }) {
         />
       </label>
       <label className={styles.field}>
-        <span>Auto-open delay</span>
+        <span>Auto-open trigger</span>
         <select
-          value={form.autoOpenDelay || 0}
-          onChange={(e) => updateField('autoOpenDelay', parseInt(e.target.value, 10))}
+          value={form.autoOpenMode || 'disabled'}
+          onChange={(e) => updateField('autoOpenMode', e.target.value)}
         >
-          <option value={0}>Disabled</option>
-          <option value={3}>After 3 seconds</option>
-          <option value={5}>After 5 seconds</option>
-          <option value={8}>After 8 seconds (recommended)</option>
-          <option value={10}>After 10 seconds</option>
-          <option value={15}>After 15 seconds</option>
-          <option value={20}>After 20 seconds</option>
+          <option value="disabled">Disabled</option>
+          <option value="time">After a delay</option>
+          <option value="scroll">When user scrolls</option>
+          <option value="time_or_scroll">Delay OR scroll (first wins)</option>
         </select>
         <small>
-          Opens the widget panel automatically after this delay. Respects dismissal —
-          once closed, it won't reopen for the rest of the browser session.
+          When the widget opens itself for the first time in the session.
+          Closing the widget suppresses auto-open for the rest of the session.
         </small>
       </label>
+
+      {(form.autoOpenMode === 'time' || form.autoOpenMode === 'time_or_scroll') && (
+        <label className={styles.field}>
+          <span>Delay before opening</span>
+          <select
+            value={form.autoOpenDelay || 8}
+            onChange={(e) => updateField('autoOpenDelay', parseInt(e.target.value, 10))}
+          >
+            <option value={3}>3 seconds</option>
+            <option value={5}>5 seconds</option>
+            <option value={8}>8 seconds (recommended)</option>
+            <option value={10}>10 seconds</option>
+            <option value={15}>15 seconds</option>
+            <option value={20}>20 seconds</option>
+          </select>
+        </label>
+      )}
+
+      {(form.autoOpenMode === 'scroll' || form.autoOpenMode === 'time_or_scroll') && (
+        <label className={styles.field}>
+          <span>Scroll threshold</span>
+          <select
+            value={form.autoOpenScrollPercent || 50}
+            onChange={(e) => updateField('autoOpenScrollPercent', parseInt(e.target.value, 10))}
+          >
+            <option value={25}>After 25% of the page</option>
+            <option value={50}>After 50% of the page (recommended)</option>
+          </select>
+          <small>On pages that don't scroll, this trigger won't fire.</small>
+        </label>
+      )}
     </>
   );
 }

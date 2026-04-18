@@ -48,7 +48,9 @@ export function buildConfig(form) {
       dataLayerName: form.dataLayerName,
       eventPrefix: form.eventPrefix,
     },
+    autoOpenMode: form.autoOpenMode || 'disabled',
     autoOpenDelay: form.autoOpenDelay || 0,
+    autoOpenScrollPercent: form.autoOpenScrollPercent || 0,
   };
 }
 
