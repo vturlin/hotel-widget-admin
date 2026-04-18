@@ -100,6 +100,7 @@ function AdminUI() {
     analyticsEnabled: true,
     dataLayerName: 'dataLayer',
     eventPrefix: 'hotel_widget_',
+    autoOpenDelay: 8,
   });
 
   const [roomsText, setRoomsText] = useState(
@@ -528,6 +529,25 @@ function AppearanceTab({ form, updateField }) {
           value={form.logoUrl}
           onChange={(e) => updateField('logoUrl', e.target.value)}
         />
+      </label>
+      <label className={styles.field}>
+        <span>Auto-open delay</span>
+        <select
+          value={form.autoOpenDelay || 0}
+          onChange={(e) => updateField('autoOpenDelay', parseInt(e.target.value, 10))}
+        >
+          <option value={0}>Disabled</option>
+          <option value={3}>After 3 seconds</option>
+          <option value={5}>After 5 seconds</option>
+          <option value={8}>After 8 seconds (recommended)</option>
+          <option value={10}>After 10 seconds</option>
+          <option value={15}>After 15 seconds</option>
+          <option value={20}>After 20 seconds</option>
+        </select>
+        <small>
+          Opens the widget panel automatically after this delay. Respects dismissal —
+          once closed, it won't reopen for the rest of the browser session.
+        </small>
       </label>
     </>
   );
