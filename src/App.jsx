@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import styles from './App.module.css';
 import {
   SUPPORTED_LOCALES,
@@ -283,21 +283,48 @@ function AdminUI() {
 // ──────────────────────────────────────────────────────────────────────
 
 function PreviewFrame({ previewUrl, viewport, device, setDevice }) {
-  // We scale to fit BOTH width and height of the available preview area.
-  // Using the smaller scale ensures the frame never overflows, so the
-  // Desktop/Mobile toggle remains reachable at the bottom.
-  const maxWidth = device === 'desktop' ? 760 : 260;
-  const maxHeight = 560;
+  const wrapRef = React.useRef(null);
+  const [available, setAvailable] = React.useState({ w: 800, h: 600 });
 
-  const scaleByWidth = maxWidth / viewport.w;
+  // Measure available space on mount and on window resize
+  useEffect(() => {
+    if (!wrapRef.current) return;
+    const el = wrapRef.current;
+
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      // Reserve ~80px at the bottom for the device toggle
+      setAvailable({
+        w: Math.max(320, rect.width - 40),
+        h: Math.max(400, rect.height - 80),
+      });
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
+
+  // In mobile mode, we cap the width to look like a phone. In desktop,
+  // we use the full available width.
+  const maxWidth  = device === 'desktop' ? available.w : Math.min(320, available.w);
+  const maxHeight = available.h;
+
+  const scaleByWidth  = maxWidth / viewport.w;
   const scaleByHeight = maxHeight / viewport.h;
-  const scale = Math.min(scaleByWidth, scaleByHeight);
+  const scale = Math.min(scaleByWidth, scaleByHeight, 1);
+  // cap at 1 so we never upscale beyond the iframe's native size
 
   const displayW = viewport.w * scale;
   const displayH = viewport.h * scale;
 
   return (
-    <div className={styles.previewWrap}>
+    <div ref={wrapRef} className={styles.previewWrap}>
       <div className={styles.browserFrame} style={{ width: displayW + 16 }}>
         <div className={styles.browserBar}>
           <span className={styles.browserDot} style={{ background: '#ff5f56' }} />
