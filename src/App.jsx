@@ -13,6 +13,8 @@ import {
   buildPreviewUrl,
 } from './utils.js';
 import PublishConfirmDialog from './PublishConfirmDialog.jsx';
+import HotelsLanding from './HotelsLanding.jsx';
+import ConfirmDeleteDialog from './ConfirmDeleteDialog.jsx';
 
 // ──────────────────────────────────────────────────────────────────────
 // Root component — handles auth gate and shows admin UI when unlocked
@@ -75,8 +77,98 @@ export default function App() {
 // ──────────────────────────────────────────────────────────────────────
 
 function AdminUI() {
+  // Navigation state: 'landing' | 'form'
+  const [view, setView] = useState('landing');
+  // Passed to the form when opening an existing hotel, null for creation
+  const [editingHotelId, setEditingHotelId] = useState(null);
+  // Dialog states
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  function handleOpen(hotelId) {
+    setEditingHotelId(hotelId);
+    setView('form');
+  }
+
+  function handleCreate() {
+    setEditingHotelId(null);
+    setView('form');
+  }
+
+  async function handleDuplicate(sourceId) {
+    const newId = prompt(
+      `Duplicate "${sourceId}" to a new Hotel ID:`,
+      `${sourceId}_copy`
+    );
+    if (!newId) return;
+    if (!/^[a-zA-Z0-9_-]+$/.test(newId)) {
+      alert('Invalid ID. Use letters, numbers, dashes and underscores only.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceId, newId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Duplicate failed');
+      // Open the duplicate in the form
+      setEditingHotelId(newId);
+      setView('form');
+    } catch (err) {
+      alert(`Duplicate failed: ${err.message}`);
+    }
+  }
+
+  function handleDelete(hotelId, hotelName) {
+    setDeleteTarget({ hotelId, hotelName });
+  }
+
+  function handleDeleteConfirmed() {
+    setDeleteTarget(null);
+    // Force a remount of the landing to refresh the list
+    setView('landing');
+  }
+
+  function handleBackToLanding() {
+    setEditingHotelId(null);
+    setView('landing');
+  }
+
+  if (view === 'landing') {
+    return (
+      <>
+        <HotelsLanding
+          key={Date.now()}  // Force refresh when returning
+          onOpen={handleOpen}
+          onCreate={handleCreate}
+          onDuplicate={handleDuplicate}
+          onDelete={handleDelete}
+        />
+        {deleteTarget && (
+          <ConfirmDeleteDialog
+            hotelId={deleteTarget.hotelId}
+            hotelName={deleteTarget.hotelName}
+            onConfirm={handleDeleteConfirmed}
+            onCancel={() => setDeleteTarget(null)}
+          />
+        )}
+      </>
+    );
+  }
+
+  return (
+    <ConfigForm
+      editingHotelId={editingHotelId}
+      onBack={handleBackToLanding}
+    />
+  );
+}
+function ConfigForm({ editingHotelId, onBack }) {
+  const isEditMode = !!editingHotelId;
+
   const [form, setForm] = useState({
-    hotelId: '',
+    hotelId: editingHotelId || '',
     hotelName: 'Hôtel Demo',
     hotelDomain: 'hotel-client.com',
     logoUrl: '',
@@ -117,6 +209,58 @@ function AdminUI() {
   const [publishState, setPublishState] = useState({ status: 'idle' });
   const [copied, setCopied] = useState(false);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [loadStatus, setLoadStatus] = useState(isEditMode ? 'loading' : 'ready');
+  const [loadError, setLoadError] = useState('');
+
+  // Load existing config in edit mode
+  useEffect(() => {
+    if (!isEditMode) return;
+    let cancelled = false;
+    fetch(`/api/current-config/${encodeURIComponent(editingHotelId)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (!data.exists) {
+          setLoadError(`Configuration ${editingHotelId} not found`);
+          setLoadStatus('error');
+          return;
+        }
+        const c = data.config;
+        // Convert config back to form shape
+        setForm({
+          hotelId: editingHotelId,
+          hotelName: c.hotelName || '',
+          hotelDomain: c.hotelDomain || '',
+          logoUrl: c.logoUrl || '',
+          csvUrl: c.csvUrl || '',
+          rooms: c.roomOptions || [],
+          defaultRoomId: c.default_room_id || '',
+          reserveUrl: c.reserveUrl || '',
+          channelLabels: c.channelLabels || {},
+          currency: c.currency || 'EUR',
+          position: c.position || 'bottom-right',
+          brandColor: c.brandColor || '#1a1a1a',
+          backgroundColor: c.backgroundColor || '#faf7f2',
+          enabledLocales: c.enabledLocales || ['en'],
+          defaultLocale: c.defaultLocale || 'en',
+          autoOpenMode: c.autoOpenMode || 'disabled',
+          autoOpenDelay: c.autoOpenDelay || 8,
+          autoOpenScrollPercent: c.autoOpenScrollPercent || 50,
+          analyticsEnabled: c.analytics?.enabled ?? true,
+          dataLayerName: c.analytics?.dataLayerName || 'dataLayer',
+        });
+        setRoomsText(
+          (c.roomOptions || []).map((r) => `${r.id} | ${r.name}`).join('\n')
+        );
+        setLoadStatus('ready');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setLoadError(err.message);
+        setLoadStatus('error');
+      });
+    return () => { cancelled = true; };
+  }, [isEditMode, editingHotelId]);
 
   useEffect(() => {
     const parsed = parseRoomsText(roomsText);
@@ -197,7 +341,6 @@ function AdminUI() {
     } catch (err) {
       console.error('[admin] publish failed', err);
       setPublishState({ status: 'error', message: err.message });
-      // Keep the dialog open so the user sees the error in context
     }
   }
 
@@ -221,6 +364,33 @@ function AdminUI() {
     });
   }
 
+  // Loading state for edit mode
+  if (loadStatus === 'loading') {
+    return (
+      <div className={styles.app}>
+        <div className={styles.landingLoading}>Loading configuration…</div>
+      </div>
+    );
+  }
+  if (loadStatus === 'error') {
+    return (
+      <div className={styles.app}>
+        <div className={styles.errorBox} style={{ margin: 40 }}>
+          <strong>Couldn't load configuration</strong>
+          <p>{loadError}</p>
+          <button
+            type="button"
+            onClick={onBack}
+            className={styles.ghostBtn}
+            style={{ marginTop: 12 }}
+          >
+            ← Back to hotels
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.app}>
       <header className={styles.header}>
@@ -231,7 +401,17 @@ function AdminUI() {
             className={styles.headerLogo}
           />
           <span className={styles.headerDivider} />
-          <h1 className={styles.headerTitle}>Hotel Widget Config Manager</h1>
+          <button
+            type="button"
+            onClick={onBack}
+            className={styles.breadcrumbLink}
+          >
+            Hotels
+          </button>
+          <span className={styles.breadcrumbSep}>/</span>
+          <h1 className={styles.headerTitle}>
+            {isEditMode ? form.hotelName || form.hotelId : 'New configuration'}
+          </h1>
         </div>
         <div className={styles.headerRight}>
           {form.hotelId && (
@@ -267,7 +447,11 @@ function AdminUI() {
         <aside className={styles.configPanel}>
           <div className={styles.configInner}>
             {activeTab === 'identity' && (
-              <IdentityTab form={form} updateField={updateField} />
+              <IdentityTab
+                form={form}
+                updateField={updateField}
+                isEditMode={isEditMode}
+              />
             )}
             {activeTab === 'data' && (
               <DataTab
@@ -304,7 +488,8 @@ function AdminUI() {
           </div>
         </aside>
       </div>
-        {showPublishDialog && (
+
+      {showPublishDialog && (
         <PublishConfirmDialog
           hotelId={form.hotelId}
           config={config}
@@ -406,7 +591,7 @@ function PreviewFrame({ previewUrl, viewport, device, setDevice }) {
 // Tab components
 // ──────────────────────────────────────────────────────────────────────
 
-function IdentityTab({ form, updateField }) {
+function IdentityTab({ form, updateField, isEditMode }) {
   return (
     <>
       <h2 className={styles.tabTitle}>Identity</h2>
@@ -421,10 +606,12 @@ function IdentityTab({ form, updateField }) {
           value={form.hotelId}
           onChange={(e) => updateField('hotelId', e.target.value)}
           placeholder="e.g. hm_myhotel_paris"
+          disabled={isEditMode}
         />
         <small>
-          Unique identifier used to fetch the config. Lowercase,
-          alphanumeric, dashes and underscores only.
+          {isEditMode
+            ? 'Locked in edit mode. To change the ID, duplicate this configuration instead.'
+            : 'Unique identifier used to fetch the config. Lowercase, alphanumeric, dashes and underscores only.'}
         </small>
       </label>
 
