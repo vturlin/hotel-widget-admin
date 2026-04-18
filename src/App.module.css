@@ -681,3 +681,228 @@ code { font-family: ui-monospace, 'SF Mono', Consolas, monospace; }
   text-align: center;
   font-weight: 500;
 }
+/* ========== Modal ==================================================== */
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 19, 51, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: modalFadeIn 160ms ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modalCard {
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  background: var(--bg-panel);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalSlideIn 200ms ease-out;
+}
+
+@keyframes modalSlideIn {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modalHeader {
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modalTitle {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.modalSubtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.modalBody {
+  padding: 20px 28px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modalBody::-webkit-scrollbar { width: 8px; }
+.modalBody::-webkit-scrollbar-track { background: transparent; }
+.modalBody::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+.modalSection {
+  margin-bottom: 24px;
+}
+
+.modalSection:last-child { margin-bottom: 0; }
+
+.modalSectionTitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+}
+
+.modalMuted {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+  font-style: italic;
+}
+
+/* Summary */
+.modalSummary {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 8px 16px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.modalSummaryLabel {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.modalSummaryValue {
+  color: var(--text-primary);
+  margin: 0;
+  font-weight: 500;
+}
+
+.mono {
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 12.5px;
+  background: var(--brand-subtle);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--brand);
+  display: inline-block;
+}
+
+/* New publication banner */
+.modalNewBanner {
+  padding: 14px 16px;
+  background: var(--brand-subtle);
+  border-left: 3px solid var(--brand);
+  border-radius: var(--radius);
+}
+
+.modalNewBanner strong {
+  display: block;
+  color: var(--brand);
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.modalNewBanner p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.modalNewBanner code {
+  background: white;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--brand);
+}
+
+/* Diff list */
+.diffList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.diffItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+.diffItem:last-child { border-bottom: none; }
+
+.diff_added { background: #f0fdf4; }
+.diff_removed { background: #fef2f2; }
+.diff_modified { background: var(--bg-panel); }
+
+.diffPath {
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+  font-weight: 600;
+  min-width: 180px;
+  flex-shrink: 0;
+  word-break: break-word;
+}
+
+.diffValues {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.diffBefore {
+  color: #991b1b;
+  text-decoration: line-through;
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  word-break: break-all;
+}
+
+.diffAfter {
+  color: #166534;
+  font-weight: 500;
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  word-break: break-all;
+}
+
+.diffArrow {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Footer */
+.modalFooter {
+  padding: 16px 28px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-subtle);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

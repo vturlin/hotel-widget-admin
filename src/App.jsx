@@ -12,6 +12,7 @@ import {
   buildConfig,
   buildPreviewUrl,
 } from './utils.js';
+import PublishConfirmDialog from './PublishConfirmDialog.jsx';
 
 // ──────────────────────────────────────────────────────────────────────
 // Root component — handles auth gate and shows admin UI when unlocked
@@ -115,6 +116,7 @@ function AdminUI() {
   const [activeTab, setActiveTab] = useState('identity');
   const [publishState, setPublishState] = useState({ status: 'idle' });
   const [copied, setCopied] = useState(false);
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
 
   useEffect(() => {
     const parsed = parseRoomsText(roomsText);
@@ -162,7 +164,7 @@ function AdminUI() {
     });
   }
 
-  async function handlePublish() {
+  function handlePublish() {
     if (!form.hotelId || !form.hotelId.trim()) {
       setPublishState({
         status: 'error',
@@ -170,6 +172,11 @@ function AdminUI() {
       });
       return;
     }
+    setPublishState({ status: 'idle' });
+    setShowPublishDialog(true);
+  }
+
+  async function handleConfirmPublish() {
     setPublishState({ status: 'publishing' });
     try {
       const res = await fetch('/api/publish', {
@@ -179,7 +186,6 @@ function AdminUI() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Publish failed');
-      // Log details to the console for debugging; UI stays clean.
       console.info('[admin] published', {
         hotelId: form.hotelId,
         commitSha: data.commit?.sha,
@@ -187,9 +193,11 @@ function AdminUI() {
         fullResponse: data,
       });
       setPublishState({ status: 'success' });
+      setShowPublishDialog(false);
     } catch (err) {
       console.error('[admin] publish failed', err);
       setPublishState({ status: 'error', message: err.message });
+      // Keep the dialog open so the user sees the error in context
     }
   }
 
@@ -296,6 +304,15 @@ function AdminUI() {
           </div>
         </aside>
       </div>
+        {showPublishDialog && (
+        <PublishConfirmDialog
+          hotelId={form.hotelId}
+          config={config}
+          onConfirm={handleConfirmPublish}
+          onCancel={() => setShowPublishDialog(false)}
+          isPublishing={publishState.status === 'publishing'}
+        />
+      )}
     </div>
   );
 }
