@@ -57,6 +57,34 @@ export function buildConfig(form) {
  * Encode the config as urlsafe base64 and build the preview URL.
  * We UTF-8 encode first because native btoa can't handle non-ASCII.
  */
-export function buildPreviewUrl(baseUrl /* , config — unused for now */) {
-  return `${baseUrl}?id=preview`;
+/**
+ * Build the URL for the admin preview iframe.
+ *
+ * Encodes the current form's config as urlsafe base64 and passes it via
+ * ?preview=<b64> to the widget's demo page. The widget's loader decodes
+ * this and uses it as the live config — this is how the admin gets
+ * real-time WYSIWYG updates when the user edits colors, names, etc.
+ *
+ * We always force _preview: true on the config before encoding so the
+ * widget knows to use hardcoded demo prices (never the real CSV). This
+ * is critical: it prevents real-looking prices from appearing in the
+ * admin from a half-configured hotel.
+ *
+ * UTF-8 safe via TextEncoder — a plain btoa() breaks on accented chars
+ * like "Hôtel Marquise".
+ */
+export function buildPreviewUrl(baseUrl, config) {
+  const previewConfig = { ...config, _preview: true };
+  const json = JSON.stringify(previewConfig);
+
+  // UTF-8 safe: encode string → bytes → base64, then make it urlsafe
+  const bytes = new TextEncoder().encode(json);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  const b64 = btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+  return `${baseUrl}?preview=${b64}`;
 }
