@@ -19,8 +19,7 @@ export const POSITIONS = {
 // Points to the deployed widget demo page. Overridable via build-time env
 // var (prefixed VITE_ to be exposed to the browser by Vite).
 export const WIDGET_PREVIEW_URL =
-  import.meta.env.VITE_WIDGET_PREVIEW_URL ||
-  'https://vturlin.github.io/best-price-widget/demo.html';
+  'https://vturlin.github.io/best-price-widget/transparent.html';
 
 export const TABS = [
   { key: 'identity',   label: 'Identity' },
