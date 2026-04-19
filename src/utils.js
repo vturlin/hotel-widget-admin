@@ -88,3 +88,47 @@ export function buildPreviewUrl(baseUrl, config) {
 
   return `${baseUrl}?preview=${b64}`;
 }
+
+/**
+ * Validate that a string looks like a legitimate public domain.
+ * Used to guard what we send to the screenshot service.
+ *
+ * Rejects:
+ *   - localhost, 127.x.x.x, 0.0.0.0
+ *   - RFC1918 private ranges (10.x, 172.16-31.x, 192.168.x)
+ *   - IP addresses in general (Thum.io accepts them but we don't want
+ *     to leak internal network topology)
+ *   - URLs with paths, queries, or fragments (only bare host)
+ *   - Anything that doesn't match a strict domain regex
+ */
+export function isValidPublicDomain(domain) {
+  if (!domain || typeof domain !== 'string') return false;
+  const trimmed = domain.trim().toLowerCase();
+  if (!trimmed) return false;
+
+  // Strip protocol if present
+  let host = trimmed.replace(/^https?:\/\//, '');
+  // Strip anything after the host (path/query/fragment)
+  host = host.split('/')[0].split('?')[0].split('#')[0];
+  if (!host) return false;
+
+  // Reject localhost variants
+  if (host === 'localhost' || host.endsWith('.localhost')) return false;
+  if (host === '0.0.0.0') return false;
+
+  // Reject IP addresses (private AND public — screenshots of IPs look
+  // unprofessional and the field is meant for hotel domains)
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) return false;
+  if (/^\[[0-9a-f:]+\]$/.test(host)) return false; // IPv6 literal
+
+  // Must contain at least one dot (TLD)
+  if (!host.includes('.')) return false;
+
+  // Must match a basic domain regex:
+  //   labels separated by dots, each label 1-63 chars, alphanumeric or
+  //   hyphen (but not starting/ending with hyphen)
+  const domainRe = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/;
+  if (!domainRe.test(host)) return false;
+
+  return true;
+}

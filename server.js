@@ -26,6 +26,41 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+
+// ─── Security headers ───────────────────────────────────────────────
+// Content Security Policy — restrict what the admin UI can load.
+// Allowed sources:
+//   - 'self': the admin's own Cloud Run origin
+//   - Google Fonts for our Inter typeface
+//   - D-EDGE logo hotlinked from their site
+//   - Thum.io for client site screenshots
+//   - GitHub Pages for the widget preview iframe
+//   - GitHub API for config fetch/publish (we call it server-side but the
+//     browser may preflight; fetch to api.github.com from admin frontend
+//     is NOT done directly, but kept as 'self' via our /api proxy)
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "img-src 'self' https://image.thum.io https://www.d-edge.com data: blob:",
+      "script-src 'self'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "frame-src 'self' https://vturlin.github.io",
+      "connect-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; ')
+  );
+  // Additional hardening
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
 app.use(express.json({ limit: '100kb' }));
 
 // ─── /api/auth ──────────────────────────────────────────────────────

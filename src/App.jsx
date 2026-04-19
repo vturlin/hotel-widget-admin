@@ -11,6 +11,7 @@ import {
   parseRoomsText,
   buildConfig,
   buildPreviewUrl,
+  isValidPublicDomain,   
 } from './utils.js';
 import PublishConfirmDialog from './PublishConfirmDialog.jsx';
 import HotelsLanding from './HotelsLanding.jsx';
@@ -441,6 +442,7 @@ function ConfigForm({ editingHotelId, onBack }) {
             viewport={viewport}
             device={device}
             setDevice={setDevice}
+            clientDomain={form.hotelDomain}
           />
         </div>
 
@@ -506,14 +508,15 @@ function ConfigForm({ editingHotelId, onBack }) {
 // PreviewFrame — the centered, scaled iframe with a fake browser chrome
 // ──────────────────────────────────────────────────────────────────────
 
-function PreviewFrame({ previewUrl, viewport, device, setDevice }) {
+function PreviewFrame({ previewUrl, viewport, device, setDevice, clientDomain }) {
   const wrapRef = useRef(null);
   const [available, setAvailable] = useState({ w: 800, h: 600 });
+  const [screenshotFailed, setScreenshotFailed] = useState(false);
 
+  // Measure available space
   useEffect(() => {
     if (!wrapRef.current) return;
     const el = wrapRef.current;
-
     const measure = () => {
       const rect = el.getBoundingClientRect();
       setAvailable({
@@ -521,7 +524,6 @@ function PreviewFrame({ previewUrl, viewport, device, setDevice }) {
         h: Math.max(400, rect.height - 80),
       });
     };
-
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
@@ -532,13 +534,35 @@ function PreviewFrame({ previewUrl, viewport, device, setDevice }) {
     };
   }, []);
 
+  // Only build a screenshot URL if the client domain looks legitimate.
+  // isValidPublicDomain rejects localhost, private IPs, malformed input, etc.
+  const clientUrl = useMemo(() => {
+    if (!isValidPublicDomain(clientDomain)) return null;
+    const d = clientDomain.trim();
+    if (d.startsWith('http://') || d.startsWith('https://')) return d;
+    return `https://${d}`;
+  }, [clientDomain]);
+
+  // Reset the failure state when the URL changes — give the new domain
+  // a chance to load instead of permanently sticking to the fallback.
+  useEffect(() => {
+    setScreenshotFailed(false);
+  }, [clientUrl]);
+
+  // Thum.io URL. Their cache key is the full input URL, so repeat views
+  // of the same domain load instantly.
+  const screenshotUrl = useMemo(() => {
+    if (!clientUrl || screenshotFailed) return null;
+    return `https://image.thum.io/get/width/${viewport.w}/crop/${viewport.h}/${clientUrl}`;
+  }, [clientUrl, screenshotFailed, viewport.w, viewport.h]);
+
+  const useScreenshot = screenshotUrl !== null;
+
   const maxWidth  = device === 'desktop' ? available.w : Math.min(320, available.w);
   const maxHeight = available.h;
-
   const scaleByWidth  = maxWidth / viewport.w;
   const scaleByHeight = maxHeight / viewport.h;
   const scale = Math.min(scaleByWidth, scaleByHeight, 1);
-
   const displayW = viewport.w * scale;
   const displayH = viewport.h * scale;
 
@@ -549,11 +573,38 @@ function PreviewFrame({ previewUrl, viewport, device, setDevice }) {
           <span className={styles.browserDot} style={{ background: '#ff5f56' }} />
           <span className={styles.browserDot} style={{ background: '#ffbd2e' }} />
           <span className={styles.browserDot} style={{ background: '#27c93f' }} />
+          <span className={styles.browserBarUrl}>
+            {useScreenshot ? clientUrl : 'demo.hotel-widget.app'}
+          </span>
         </div>
         <div
           className={styles.browserViewport}
-          style={{ width: displayW, height: displayH }}
+          style={{ width: displayW, height: displayH, position: 'relative' }}
         >
+          {useScreenshot ? (
+            <img
+              key={screenshotUrl}
+              src={screenshotUrl}
+              alt="Client website preview"
+              onError={() => setScreenshotFailed(true)}
+              style={{
+                width: viewport.w,
+                height: viewport.h,
+                transform: `scale(${scale})`,
+                transformOrigin: 'top left',
+                position: 'absolute',
+                inset: 0,
+                objectFit: 'cover',
+                background: '#fff',
+              }}
+              // The referrer policy restricts what Thum.io learns about
+              // our admin URL structure.
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className={styles.previewBackdropDemo} />
+          )}
+
           <iframe
             key={previewUrl}
             src={previewUrl}
@@ -563,8 +614,12 @@ function PreviewFrame({ previewUrl, viewport, device, setDevice }) {
               transform: `scale(${scale})`,
               transformOrigin: 'top left',
               border: 0,
+              position: 'absolute',
+              inset: 0,
+              background: 'transparent',
             }}
             title="Widget preview"
+            allowTransparency="true"
           />
         </div>
       </div>
@@ -632,7 +687,10 @@ function IdentityTab({ form, updateField, isEditMode }) {
           onChange={(e) => updateField('hotelDomain', e.target.value)}
           placeholder="hotel-client.com"
         />
-        <small>Stored for reference — not used by the widget yet.</small>
+        <small>
+          Used to fetch a screenshot of the hotel's homepage as the preview
+          backdrop. Falls back to a neutral demo if empty or invalid.
+        </small>
       </label>
 
       <label className={styles.field}>
