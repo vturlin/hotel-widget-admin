@@ -246,17 +246,6 @@ function ConfigForm({ editingHotelId, onBack }) {
     return () => { cancelled = true; };
   }, [isEditMode, editingHotelId]);
 
-  useEffect(() => {
-    const parsed = parseRoomsText(roomsText);
-    setForm((f) => ({
-      ...f,
-      rooms: parsed,
-      defaultRoomId: parsed.find((r) => r.id === f.defaultRoomId)
-        ? f.defaultRoomId
-        : parsed[0]?.id || '',
-    }));
-  }, [roomsText]);
-
   const config = useMemo(() => buildConfig(form), [form]);
   const previewUrl = useMemo(
     () => buildPreviewUrl(WIDGET_PREVIEW_URL, config),
