@@ -1024,58 +1024,49 @@ function AppearanceTab({ form, updateField }) {
 function LanguagesTab({ form, updateField, toggleLocale }) {
   return (
     <>
-      <h2 className={styles.tabTitle}>Languages &amp; currency</h2>
-      <p className={styles.tabHint}>Click a chip to toggle a language.</p>
+      <h2 className={styles.tabTitle}>Languages</h2>
+      <p className={styles.tabHint}>
+        Which languages the widget offers, and which one it falls back to.
+      </p>
 
-      <div className={styles.field}>
+      <label className={styles.field}>
         <span>Enabled languages</span>
-        <div className={styles.chipGrid}>
-          {Object.entries(SUPPORTED_LOCALES).map(([code, name]) => (
-            <button
-              type="button"
-              key={code}
-              className={`${styles.chip} ${
-                form.enabledLocales.includes(code) ? styles.chipActive : ''
-              }`}
-              onClick={() => toggleLocale(code)}
-            >
-              {code} · {name}
-            </button>
+        <div className={styles.checkboxGroup}>
+          {SUPPORTED_LOCALES.map((loc) => (
+            <label key={loc.code} className={styles.checkboxLine}>
+              <input
+                type="checkbox"
+                checked={(form.enabledLocales || []).includes(loc.code)}
+                onChange={() => toggleLocale(loc.code)}
+              />
+              <span>{loc.name}</span>
+              <code className={styles.localeCode}>{loc.code}</code>
+            </label>
           ))}
         </div>
-      </div>
+        <small>
+          The widget auto-detects the browser language and uses it if enabled.
+          Otherwise it uses the default language below.
+        </small>
+      </label>
 
       <label className={styles.field}>
         <span>Default language</span>
         <select
-          value={form.defaultLocale}
+          value={form.defaultLocale || 'en'}
           onChange={(e) => updateField('defaultLocale', e.target.value)}
         >
-          {form.enabledLocales.map((code) => (
-            <option key={code} value={code}>
-              {code} · {SUPPORTED_LOCALES[code] || code}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className={styles.field}>
-        <span>Currency</span>
-        <select
-          value={form.currency}
-          onChange={(e) => updateField('currency', e.target.value)}
-        >
-          {SUPPORTED_CURRENCIES.map((c) => {
-            // Handle both shapes: string ('EUR') or object ({ code, name })
-            const value = typeof c === 'string' ? c : c.code;
-            const label = typeof c === 'string' ? c : (c.name || c.code);
-            return (
-              <option key={value} value={value}>
-                {label}
+          {SUPPORTED_LOCALES
+            .filter((loc) => (form.enabledLocales || []).includes(loc.code))
+            .map((loc) => (
+              <option key={loc.code} value={loc.code}>
+                {loc.name}
               </option>
-            );
-          })}
+            ))}
         </select>
+        <small>
+          Used when the browser language is not in the enabled list.
+        </small>
       </label>
     </>
   );
