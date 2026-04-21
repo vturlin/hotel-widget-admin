@@ -22,8 +22,81 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
+import NodeCache from 'node-cache';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// ─── In-memory rates cache ──────────────────────────────────────────
+// node-cache handles TTL expiry and periodic cleanup for us. Cache lives
+// in the process memory, so it's lost on container restart (Cloud Run
+// scales to zero after ~15 min of inactivity). Acceptable for the POC:
+// only cost is one extra upstream call on cold start.
+//
+// stdTTL    = 86400 seconds (24h) — default for every entry
+// checkperiod = 600 seconds (10 min) — background sweep of expired keys
+// useClones = false — don't deep-clone the big JSON on get/set (faster)
+
+const ratesCache = new NodeCache({
+  stdTTL: 3600,
+  checkperiod: 120,
+  useClones: false,
+});
+
+function cacheKey(apiHotelId, year, month) {
+  return `${apiHotelId}:${year}:${month}`;
+}
+
+// ─── Rates API helpers ──────────────────────────────────────────────
+// Token generation follows the AvailPro spec:
+//   raw  = "{hotelId}:{YYYYMMDD}:Token:{salt}"   (UTC date)
+//   hash = MD5(raw)
+//   token = hex(hash).lowercase
+//
+// The date rolls at UTC midnight, so tokens are valid for one UTC day.
+
+function generateRatesApiToken(hotelId) {
+  const salt = process.env.RATES_API_SALT;
+  if (!salt) throw new Error('RATES_API_SALT not configured');
+
+  const now = new Date();
+  const dateStr =
+    now.getUTCFullYear().toString() +
+    String(now.getUTCMonth() + 1).padStart(2, '0') +
+    String(now.getUTCDate()).padStart(2, '0');
+
+  const raw = `${hotelId}:${dateStr}:Token:${salt}`;
+  return crypto.createHash('md5').update(raw, 'utf-8').digest('hex').toLowerCase();
+}
+
+async function fetchRatesFromUpstream(apiHotelId, year, month) {
+  const baseUrl = process.env.RATES_API_BASE_URL;
+  if (!baseUrl) throw new Error('RATES_API_BASE_URL not set');
+
+  const token = generateRatesApiToken(apiHotelId);
+  const upstreamUrl = new URL(`${baseUrl}/hotels/${apiHotelId}/prices`);
+  upstreamUrl.searchParams.set('year', String(year));
+  upstreamUrl.searchParams.set('month', String(month).padStart(2, '0'));
+  upstreamUrl.searchParams.set('token', token);
+
+  console.info(
+    '[rates] upstream fetch',
+    `hotel=${apiHotelId}`,
+    `year=${year}`,
+    `month=${month}`
+  );
+
+  const res = await fetch(upstreamUrl.toString(), {
+    headers: { Accept: 'application/json' },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Upstream ${res.status}: ${text.slice(0, 200)}`);
+  }
+
+  return res.json();
+}
 
 const app = express();
 
@@ -406,35 +479,13 @@ app.delete('/api/config/:hotelId', async (req, res) => {
 });
 
 // ─── Rates API proxy ────────────────────────────────────────────────
-// Proxies calls to the AvailPro rate screener API. This keeps the salt
-// server-side (would be a critical leak if ever exposed in the widget JS)
-// and lets us reshape the response for the widget without touching the
-// upstream API.
+// Proxies calls to the AvailPro rate screener API. Keeps the salt
+// server-side (would be a critical leak if ever exposed in the widget)
+// and adds an in-memory cache (24h TTL) to avoid hammering upstream.
 //
-// Token generation follows the AvailPro spec:
-//   raw  = "{hotelId}:{YYYYMMDD}:Token:{salt}"   (UTC date)
-//   hash = MD5(raw)
-//   token = hex(hash).lowercase
-//
-// The date rolls at UTC midnight, so tokens are valid for one UTC day.
-// If we're ever close to the boundary, we may generate an expired token;
-// for now we accept the edge case and rely on retries.
-
-import crypto from 'node:crypto';
-
-function generateRatesApiToken(hotelId) {
-  const salt = process.env.RATES_API_SALT;
-  if (!salt) throw new Error('RATES_API_SALT not configured');
-
-  const now = new Date();
-  const dateStr =
-    now.getUTCFullYear().toString() +
-    String(now.getUTCMonth() + 1).padStart(2, '0') +
-    String(now.getUTCDate()).padStart(2, '0');
-
-  const raw = `${hotelId}:${dateStr}:Token:${salt}`;
-  return crypto.createHash('md5').update(raw, 'utf-8').digest('hex').toLowerCase();
-}
+// Response headers set for observability:
+//   X-Cache: HIT | MISS
+//   X-Cache-Expires-In-Seconds: <seconds>   (on HIT)
 
 app.get('/api/rates/:apiHotelId', async (req, res) => {
   try {
@@ -452,49 +503,56 @@ app.get('/api/rates/:apiHotelId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid year or month' });
     }
 
-    const baseUrl = process.env.RATES_API_BASE_URL;
-    if (!baseUrl) {
-      return res.status(500).json({ error: 'RATES_API_BASE_URL not set' });
+    const key = cacheKey(apiHotelId, year, month);
+
+    // Cache first
+    const cached = ratesCache.get(key);
+    if (cached) {
+      res.setHeader('X-Cache', 'HIT');
+      const ttl = ratesCache.getTtl(key);
+      if (ttl) {
+        res.setHeader(
+          'X-Cache-Expires-In-Seconds',
+          String(Math.floor((ttl - Date.now()) / 1000))
+        );
+      }
+      return res.json(cached);
     }
 
-    const token = generateRatesApiToken(apiHotelId);
-    const upstreamUrl = new URL(
-      `${baseUrl}/hotels/${apiHotelId}/prices`
-    );
-    upstreamUrl.searchParams.set('year', String(year));
-    upstreamUrl.searchParams.set('month', String(month).padStart(2, '0'));
-    upstreamUrl.searchParams.set('token', token);
-
+    // Miss: fetch upstream and cache
     console.info(
-      '[rates] fetching',
+      '[rates] cache MISS',
       `hotel=${apiHotelId}`,
       `year=${year}`,
       `month=${month}`
     );
-
-    const upstreamRes = await fetch(upstreamUrl.toString(), {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-    });
-
-    if (!upstreamRes.ok) {
-      const text = await upstreamRes.text();
-      console.error(
-        '[rates] upstream error',
-        upstreamRes.status,
-        text.slice(0, 500)
-      );
-      return res
-        .status(upstreamRes.status)
-        .json({ error: `Upstream API returned ${upstreamRes.status}` });
-    }
-
-    const data = await upstreamRes.json();
+    const data = await fetchRatesFromUpstream(apiHotelId, year, month);
+    ratesCache.set(key, data);   // uses stdTTL (24h)
+    res.setHeader('X-Cache', 'MISS');
     return res.json(data);
   } catch (err) {
     console.error('[api/rates]', err);
     return res.status(500).json({ error: err.message });
   }
+});
+
+// ─── Cache inspection (debugging) ────────────────────────────────────
+// Useful to monitor cache effectiveness. Not sensitive but you may want
+// to lock this down later.
+app.get('/api/rates-cache/stats', (req, res) => {
+  const stats = ratesCache.getStats();
+  const keys = ratesCache.keys();
+  return res.json({
+    stats,
+    keyCount: keys.length,
+    keys: keys.map((k) => {
+      const ttl = ratesCache.getTtl(k);
+      return {
+        key: k,
+        expiresInSeconds: ttl ? Math.floor((ttl - Date.now()) / 1000) : null,
+      };
+    }),
+  });
 });
 
 // ─── Static frontend (production) ───────────────────────────────────
