@@ -902,14 +902,16 @@ function AppearanceTab({ form, updateField }) {
   return (
     <>
       <h2 className={styles.tabTitle}>Appearance</h2>
-      <p className={styles.tabHint}>Colors, position, and opening behaviour.</p>
+      <p className={styles.tabHint}>
+        Colors, position, and opening behaviour.
+      </p>
 
-      <div className={styles.twoCol}>
+      <div className={styles.fieldPair}>
         <label className={styles.field}>
           <span>Brand color</span>
           <input
             type="color"
-            value={form.brandColor}
+            value={form.brandColor || '#1a1a1a'}
             onChange={(e) => updateField('brandColor', e.target.value)}
           />
           <small>Buttons and accents.</small>
@@ -919,7 +921,7 @@ function AppearanceTab({ form, updateField }) {
           <span>Background</span>
           <input
             type="color"
-            value={form.backgroundColor}
+            value={form.backgroundColor || '#faf7f2'}
             onChange={(e) => updateField('backgroundColor', e.target.value)}
           />
           <small>Widget panel fill.</small>
@@ -929,18 +931,36 @@ function AppearanceTab({ form, updateField }) {
       <label className={styles.field}>
         <span>Position on screen</span>
         <select
-          value={form.position}
+          value={form.position || 'bottom-right'}
           onChange={(e) => updateField('position', e.target.value)}
         >
-          {Object.entries(POSITIONS).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v}
+          {POSITIONS.map((pos) => (
+            <option key={pos.value} value={pos.value}>
+              {pos.label}
             </option>
           ))}
         </select>
       </label>
 
-      <h3 className={styles.subTitle}>Auto-open behaviour</h3>
+      <label className={styles.field}>
+        <span>Widget size</span>
+        <select
+          value={form.size || 'small'}
+          onChange={(e) => updateField('size', e.target.value)}
+        >
+          {SIZES.map((sz) => (
+            <option key={sz.value} value={sz.value}>
+              {sz.label}
+            </option>
+          ))}
+        </select>
+        <small>
+          Overall scale of the widget. Small is discreet, large draws more
+          attention.
+        </small>
+      </label>
+
+      <h3 className={styles.subTabTitle}>Auto-open behaviour</h3>
 
       <label className={styles.field}>
         <span>Auto-open trigger</span>
@@ -948,10 +968,11 @@ function AppearanceTab({ form, updateField }) {
           value={form.autoOpenMode || 'disabled'}
           onChange={(e) => updateField('autoOpenMode', e.target.value)}
         >
-          <option value="disabled">Disabled</option>
-          <option value="time">After a delay</option>
-          <option value="scroll">When user scrolls</option>
-          <option value="time_or_scroll">Delay or scroll (first wins)</option>
+          {AUTO_OPEN_MODES.map((mode) => (
+            <option key={mode.value} value={mode.value}>
+              {mode.label}
+            </option>
+          ))}
         </select>
         <small>
           When the widget opens itself for the first time in the session.
@@ -959,34 +980,41 @@ function AppearanceTab({ form, updateField }) {
         </small>
       </label>
 
-      {(form.autoOpenMode === 'time' || form.autoOpenMode === 'time_or_scroll') && (
+      {(form.autoOpenMode === 'time' ||
+        form.autoOpenMode === 'time_or_scroll') && (
         <label className={styles.field}>
           <span>Delay before opening</span>
           <select
             value={form.autoOpenDelay || 8}
-            onChange={(e) => updateField('autoOpenDelay', parseInt(e.target.value, 10))}
+            onChange={(e) =>
+              updateField('autoOpenDelay', parseInt(e.target.value, 10))
+            }
           >
-            <option value={3}>3 seconds</option>
-            <option value={5}>5 seconds</option>
-            <option value={8}>8 seconds (recommended)</option>
-            <option value={10}>10 seconds</option>
-            <option value={15}>15 seconds</option>
-            <option value={20}>20 seconds</option>
+            {AUTO_OPEN_DELAYS.map((d) => (
+              <option key={d.value} value={d.value}>
+                {d.label}
+              </option>
+            ))}
           </select>
         </label>
       )}
 
-      {(form.autoOpenMode === 'scroll' || form.autoOpenMode === 'time_or_scroll') && (
+      {(form.autoOpenMode === 'scroll' ||
+        form.autoOpenMode === 'time_or_scroll') && (
         <label className={styles.field}>
           <span>Scroll threshold</span>
           <select
             value={form.autoOpenScrollPercent || 50}
-            onChange={(e) => updateField('autoOpenScrollPercent', parseInt(e.target.value, 10))}
+            onChange={(e) =>
+              updateField('autoOpenScrollPercent', parseInt(e.target.value, 10))
+            }
           >
-            <option value={25}>After 25% of the page</option>
-            <option value={50}>After 50% of the page (recommended)</option>
+            {SCROLL_THRESHOLDS.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
           </select>
-          <small>On pages that don't scroll, this trigger won't fire.</small>
         </label>
       )}
     </>
