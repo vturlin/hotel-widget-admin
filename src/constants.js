@@ -61,7 +61,7 @@ export const SCROLL_THRESHOLDS = [
 ];
 
 // Currencies
-export const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF'];
+export const SUPPORTED_CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF'];
 
 // Supported locales
 export const SUPPORTED_LOCALES = [

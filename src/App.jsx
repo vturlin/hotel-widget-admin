@@ -11,7 +11,7 @@ import {
   AUTO_OPEN_MODES,
   AUTO_OPEN_DELAYS,
   SCROLL_THRESHOLDS,
-  CURRENCIES,
+  SUPPORTED_CURRENCIES,
 } from './constants.js';
 import {
   buildConfig,
