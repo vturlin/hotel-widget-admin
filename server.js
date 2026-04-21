@@ -405,6 +405,98 @@ app.delete('/api/config/:hotelId', async (req, res) => {
   }
 });
 
+// ─── Rates API proxy ────────────────────────────────────────────────
+// Proxies calls to the AvailPro rate screener API. This keeps the salt
+// server-side (would be a critical leak if ever exposed in the widget JS)
+// and lets us reshape the response for the widget without touching the
+// upstream API.
+//
+// Token generation follows the AvailPro spec:
+//   raw  = "{hotelId}:{YYYYMMDD}:Token:{salt}"   (UTC date)
+//   hash = MD5(raw)
+//   token = hex(hash).lowercase
+//
+// The date rolls at UTC midnight, so tokens are valid for one UTC day.
+// If we're ever close to the boundary, we may generate an expired token;
+// for now we accept the edge case and rely on retries.
+
+import crypto from 'node:crypto';
+
+function generateRatesApiToken(hotelId) {
+  const salt = process.env.RATES_API_SALT;
+  if (!salt) throw new Error('RATES_API_SALT not configured');
+
+  const now = new Date();
+  const dateStr =
+    now.getUTCFullYear().toString() +
+    String(now.getUTCMonth() + 1).padStart(2, '0') +
+    String(now.getUTCDate()).padStart(2, '0');
+
+  const raw = `${hotelId}:${dateStr}:Token:${salt}`;
+  return crypto.createHash('md5').update(raw, 'utf-8').digest('hex').toLowerCase();
+}
+
+app.get('/api/rates/:apiHotelId', async (req, res) => {
+  try {
+    const apiHotelId = parseInt(req.params.apiHotelId, 10);
+    if (!Number.isInteger(apiHotelId) || apiHotelId <= 0) {
+      return res.status(400).json({ error: 'Invalid apiHotelId' });
+    }
+
+    const year = parseInt(req.query.year, 10);
+    const month = parseInt(req.query.month, 10);
+    if (
+      !Number.isInteger(year) || year < 2020 || year > 2100 ||
+      !Number.isInteger(month) || month < 1 || month > 12
+    ) {
+      return res.status(400).json({ error: 'Invalid year or month' });
+    }
+
+    const baseUrl = process.env.RATES_API_BASE_URL;
+    if (!baseUrl) {
+      return res.status(500).json({ error: 'RATES_API_BASE_URL not set' });
+    }
+
+    const token = generateRatesApiToken(apiHotelId);
+    const upstreamUrl = new URL(
+      `${baseUrl}/hotels/${apiHotelId}/prices`
+    );
+    upstreamUrl.searchParams.set('year', String(year));
+    upstreamUrl.searchParams.set('month', String(month).padStart(2, '0'));
+    upstreamUrl.searchParams.set('token', token);
+
+    console.info(
+      '[rates] fetching',
+      `hotel=${apiHotelId}`,
+      `year=${year}`,
+      `month=${month}`
+    );
+
+    const upstreamRes = await fetch(upstreamUrl.toString(), {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!upstreamRes.ok) {
+      const text = await upstreamRes.text();
+      console.error(
+        '[rates] upstream error',
+        upstreamRes.status,
+        text.slice(0, 500)
+      );
+      return res
+        .status(upstreamRes.status)
+        .json({ error: `Upstream API returned ${upstreamRes.status}` });
+    }
+
+    const data = await upstreamRes.json();
+    return res.json(data);
+  } catch (err) {
+    console.error('[api/rates]', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Static frontend (production) ───────────────────────────────────
 // After `npm run build`, Vite produces ./dist. We serve it from here.
 // In dev, you'd run `vite` separately — this block isn't hit.
