@@ -64,7 +64,7 @@ export const SCROLL_THRESHOLDS = [
 export const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF'];
 
 // Supported locales
-export const LOCALES = [
+export const SUPPORTED_LOCALES = [
   { code: 'en', name: 'English' },
   { code: 'fr', name: 'Français' },
   { code: 'es', name: 'Español' },

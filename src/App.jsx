@@ -3,7 +3,7 @@ import styles from './App.module.css';
 import {
   WIDGET_PREVIEW_URL,
   TABS,
-  LOCALES,
+  SUPPORTED_LOCALES,
   API_CHANNELS,
   DEFAULT_CHANNELS_ENABLED,
   POSITIONS,
