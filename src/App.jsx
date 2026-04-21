@@ -707,6 +707,13 @@ function DataTab({ form, updateField }) {
       if (analysis.detectedCompetitorId && !form.apiCompetitorId) {
         updateField('apiCompetitorId', String(analysis.detectedCompetitorId));
       }
+      const currentEnabled = form.channelsEnabled || [];
+      if (currentEnabled.length === 0 && analysis.availableChannels?.length) {
+        updateField(
+          'channelsEnabled',
+          analysis.availableChannels.map((ch) => ch.id)
+        );
+      }
     } catch (err) {
       setTestStatus('error');
       setTestError(err.message);
@@ -846,25 +853,42 @@ function DataTab({ form, updateField }) {
 
       <h3 className={styles.subTabTitle}>Channels to display</h3>
       <p className={styles.tabHint}>
-        Only checked channels appear in the price comparison.
+        {apiAnalysis?.availableChannels?.length
+          ? 'Only checked channels appear in the price comparison.'
+          : 'Run "Test API connection" to discover available channels for this hotel.'}
       </p>
-      <div className={styles.checkboxGroup}>
-        {Object.entries(API_CHANNELS).map(([id, meta]) => (
-          <label key={id} className={styles.checkboxLine}>
-            <input
-              type="checkbox"
-              checked={(form.channelsEnabled || []).includes(parseInt(id, 10))}
-              onChange={() => toggleChannel(parseInt(id, 10))}
-            />
-            <span>
-              {meta.name}
-              {meta.isDirect && (
-                <span className={styles.apiTestResultBadge}> direct</span>
-              )}
-            </span>
-          </label>
-        ))}
-      </div>
+      {apiAnalysis?.availableChannels?.length > 0 ? (
+        <div className={styles.checkboxGroup}>
+          {apiAnalysis.availableChannels.map((ch) => {
+            const preferred = API_CHANNELS[ch.id];
+            const displayName = preferred?.name || ch.apiName;
+            const isDirect = preferred?.isDirect || false;
+            return (
+              <label key={ch.id} className={styles.checkboxLine}>
+                <input
+                  type="checkbox"
+                  checked={(form.channelsEnabled || []).includes(ch.id)}
+                  onChange={() => toggleChannel(ch.id)}
+                />
+                <span>
+                  {displayName}
+                  {isDirect && (
+                    <span className={styles.apiTestResultBadge}> direct</span>
+                  )}
+                  <span className={styles.apiChannelCount}>
+                    {' · '}{ch.roomCount} room{ch.roomCount !== 1 ? 's' : ''}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      ) : (
+        <div className={styles.emptyStateNote}>
+          <em>No channels discovered yet.</em> Channels detected by the
+          rate shopper will appear here after you test the API connection.
+        </div>
+      )}
 
       <hr className={styles.sectionDivider} />
 

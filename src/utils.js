@@ -144,6 +144,17 @@ export function analyzeRatesResponse(apiData) {
       roomsByChannel[channelId] = Array.from(roomMap.values());
     }
   }
+// Build the list of channels that actually have data for this competitor,
+  // enriched with names from apiData.channels metadata.
+  const availableChannels = Object.keys(roomsByChannel).map((chId) => {
+    const id = parseInt(chId, 10);
+    const apiName = apiData.channels?.[chId]?.channelName || `Channel ${chId}`;
+    return {
+      id,
+      apiName,
+      roomCount: roomsByChannel[chId]?.length || 0,
+    };
+  });
 
   return {
     screeningDate: apiData.screeningDate || null,
@@ -151,5 +162,6 @@ export function analyzeRatesResponse(apiData) {
     detectedCompetitorName,
     competitorsList,
     roomsByChannel,
+    availableChannels,
   };
 }

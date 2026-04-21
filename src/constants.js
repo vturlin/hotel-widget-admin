@@ -5,12 +5,11 @@ export const WIDGET_PREVIEW_URL =
 
 // Rate screener API channels (from AvailPro)
 export const API_CHANNELS = {
-  17: { name: 'Direct', slug: 'direct',  isDirect: true },
-  10: { name: 'Booking.com', slug: 'booking', isDirect: false },
-  9:  { name: 'Expedia',  slug: 'expedia', isDirect: false },
-};
-
-export const DEFAULT_CHANNELS_ENABLED = [17, 10, 9];
+  17: { name: 'Direct', isDirect: true },
+  10: { name: 'Booking.com', isDirect: false },
+  9:  { name: 'Expedia', isDirect: false },
+  27:  { name: 'Agoda', isDirect: false },
+  };
 
 // Tabs in the admin form
 export const TABS = [
