@@ -24,6 +24,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import NodeCache from 'node-cache';
+import cors from 'cors';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -151,10 +152,26 @@ app.post('/api/auth', (req, res) => {
   return res.status(401).json({ error: 'Wrong password' });
 });
 
-// ─── /api/current-config/:hotelId ───────────────────────────────────
-// Fetches the config currently published on GitHub, if any.
-// Returns { exists: false } if this hotelId hasn't been published yet,
-// so the client can show a "new publication" state rather than a diff.
+// ─── Rates API proxy ────────────────────────────────────────────────
+// Proxies calls to the AvailPro rate screener API. Keeps the salt
+// server-side (would be a critical leak if ever exposed in the widget)
+// and adds an in-memory cache (24h TTL) to avoid hammering upstream.
+//
+// This endpoint is called by the widget running on customer hotel
+// websites (different origin than the admin), so we enable CORS here
+// only. The rest of the admin routes stay same-origin.
+//
+// For a POC we allow any origin. For production, consider restricting
+// to a list of registered hotel domains.
+
+const ratesCors = cors({
+  origin: true,          // allow any origin
+  methods: ['GET'],
+  maxAge: 3600,          // cache preflight for 1h
+});
+
+app.options('/api/rates/:apiHotelId', ratesCors);
+
 app.get('/api/current-config/:hotelId', async (req, res) => {
   try {
     const { hotelId } = req.params;
