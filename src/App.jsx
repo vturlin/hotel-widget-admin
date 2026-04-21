@@ -1065,11 +1065,16 @@ function LanguagesTab({ form, updateField, toggleLocale }) {
           value={form.currency}
           onChange={(e) => updateField('currency', e.target.value)}
         >
-          {SUPPORTED_CURRENCIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
+          {SUPPORTED_CURRENCIES.map((c) => {
+            // Handle both shapes: string ('EUR') or object ({ code, name })
+            const value = typeof c === 'string' ? c : c.code;
+            const label = typeof c === 'string' ? c : (c.name || c.code);
+            return (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            );
+          })}
         </select>
       </label>
     </>
