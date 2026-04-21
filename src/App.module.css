@@ -1169,3 +1169,177 @@ code { font-family: ui-monospace, 'SF Mono', Consolas, monospace; }
     radial-gradient(circle at 20% 30%, rgba(76, 29, 149, 0.04) 0%, transparent 40%),
     radial-gradient(circle at 80% 70%, rgba(245, 158, 11, 0.04) 0%, transparent 40%);
 }
+/* ========== Data tab — API mode ====================================== */
+
+.sectionDivider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 24px 0;
+}
+
+.subTabTitle {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+
+.fieldRow {
+  margin-bottom: 16px;
+}
+
+.secondaryBtn {
+  padding: 10px 16px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 140ms, border-color 140ms;
+}
+
+.secondaryBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--brand);
+}
+
+.secondaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.apiTestResult {
+  margin: 12px 0 24px;
+  padding: 16px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-left: 3px solid #10b981;
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+
+.apiTestResultHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.apiTestResultHeader strong { color: #065f46; }
+.apiTestResultHeader span {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: ui-monospace, monospace;
+}
+
+.apiTestResultSection { margin: 12px 0; }
+
+.apiTestResultSection h4 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin: 0 0 6px;
+}
+
+.apiTestResultSection h5 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 10px 0 6px;
+  color: var(--text-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.apiTestResultBadge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  background: var(--brand-subtle);
+  color: var(--brand);
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.apiTestResultWarn {
+  color: #b45309;
+  font-style: italic;
+  margin: 4px 0;
+  font-size: 12px;
+}
+
+.apiChannelGroup { margin: 8px 0 12px; }
+
+.apiChannelCount {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
+.apiRoomList {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.apiRoomList li {
+  padding: 3px 0;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.apiRoomList li code {
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 11px;
+  color: var(--brand);
+  background: var(--brand-subtle);
+  padding: 1px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.apiRoomOccupancy {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.checkboxGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.checkboxLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0 !important;
+  background: none !important;
+  border: none !important;
+}
+
+.checkboxLine input {
+  width: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}

@@ -1,83 +1,51 @@
 /**
- * Generate a short, unique hotel ID like 'hm_a1b2c3d4'.
- */
-export function generateHotelId() {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let suffix = '';
-  for (let i = 0; i < 8; i++) {
-    suffix += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return `hm_${suffix}`;
-}
-
-/**
- * Parse a textarea value where each line is "id | name".
- */
-export function parseRoomsText(text) {
-  return text
-    .trim()
-    .split('\n')
-    .map((line) => {
-      const [id, name] = line.split('|').map((s) => s.trim());
-      return id && name ? { id, name } : null;
-    })
-    .filter(Boolean);
-}
-
-/**
- * Build the widget config JSON from the form state.
+ * Build the config JSON that gets published to GitHub. API-only: no more
+ * CSV mode, no more room options, no more channel labels. Channels are
+ * hardcoded in the widget (see API_CHANNELS in constants.js).
  */
 export function buildConfig(form) {
   return {
-    position: form.position,
-    csvUrl: form.csvUrl,
-    roomOptions: form.rooms,
-    default_room_id: form.defaultRoomId,
-    reserveUrl: form.reserveUrl,
-    currency: form.currency,
-    locale: '',
-    brandColor: form.brandColor,
-    backgroundColor: form.backgroundColor,
-    logoUrl: form.logoUrl,
-    hotelName: form.hotelName,
-    enabledLocales: form.enabledLocales,
-    defaultLocale: form.defaultLocale,
-    channelLabels: form.channelLabels,
-    analytics: {
-      enabled: form.analyticsEnabled,
-      dataLayerName: form.dataLayerName,
-    },
+    hotelName: form.hotelName || '',
+    hotelDomain: form.hotelDomain || '',
+    logoUrl: form.logoUrl || '',
+    // Data source — always API
+    apiHotelId: parseInt(form.apiHotelId, 10) || null,
+    apiCompetitorId: form.apiCompetitorId
+      ? parseInt(form.apiCompetitorId, 10)
+      : null,
+    channelsEnabled: Array.isArray(form.channelsEnabled)
+      ? form.channelsEnabled.map(Number).filter((n) => Number.isInteger(n))
+      : [17, 10, 9],
+    reserveUrl: form.reserveUrl || '',
+    currency: form.currency || 'EUR',
+    position: form.position || 'bottom-right',
+    size: form.size || 'small',
+    brandColor: form.brandColor || '#1a1a1a',
+    backgroundColor: form.backgroundColor || '#faf7f2',
+    enabledLocales: form.enabledLocales || ['en'],
+    defaultLocale: form.defaultLocale || 'en',
     autoOpenMode: form.autoOpenMode || 'disabled',
-    autoOpenDelay: form.autoOpenDelay || 0,
-    autoOpenScrollPercent: form.autoOpenScrollPercent || 0,
+    autoOpenDelay: form.autoOpenDelay || 8,
+    autoOpenScrollPercent: form.autoOpenScrollPercent || 50,
+    analytics: {
+      enabled: !!form.analyticsEnabled,
+      dataLayerName: form.dataLayerName || 'dataLayer',
+    },
   };
 }
 
 /**
- * Encode the config as urlsafe base64 and build the preview URL.
- * We UTF-8 encode first because native btoa can't handle non-ASCII.
- */
-/**
- * Build the URL for the admin preview iframe.
+ * Build the preview URL: encodes the current form's config as urlsafe
+ * base64, passes it to the widget via ?preview=<b64>. The widget decodes
+ * and uses this as the live config — real-time WYSIWYG.
  *
- * Encodes the current form's config as urlsafe base64 and passes it via
- * ?preview=<b64> to the widget's demo page. The widget's loader decodes
- * this and uses it as the live config — this is how the admin gets
- * real-time WYSIWYG updates when the user edits colors, names, etc.
- *
- * We always force _preview: true on the config before encoding so the
- * widget knows to use hardcoded demo prices (never the real CSV). This
- * is critical: it prevents real-looking prices from appearing in the
- * admin from a half-configured hotel.
- *
- * UTF-8 safe via TextEncoder — a plain btoa() breaks on accented chars
- * like "Hôtel Marquise".
+ * We always force _preview: true so the widget uses hardcoded demo prices
+ * (never the real API). Otherwise publishing a broken config could leak
+ * real prices from an unrelated hotel.
  */
 export function buildPreviewUrl(baseUrl, config) {
   const previewConfig = { ...config, _preview: true };
   const json = JSON.stringify(previewConfig);
-
-  // UTF-8 safe: encode string → bytes → base64, then make it urlsafe
   const bytes = new TextEncoder().encode(json);
   let binary = '';
   for (const b of bytes) binary += String.fromCharCode(b);
@@ -85,50 +53,103 @@ export function buildPreviewUrl(baseUrl, config) {
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');
-
   return `${baseUrl}?preview=${b64}`;
 }
 
 /**
  * Validate that a string looks like a legitimate public domain.
- * Used to guard what we send to the screenshot service.
- *
- * Rejects:
- *   - localhost, 127.x.x.x, 0.0.0.0
- *   - RFC1918 private ranges (10.x, 172.16-31.x, 192.168.x)
- *   - IP addresses in general (Thum.io accepts them but we don't want
- *     to leak internal network topology)
- *   - URLs with paths, queries, or fragments (only bare host)
- *   - Anything that doesn't match a strict domain regex
+ * Rejects localhost, private IPs, malformed input, bare IPs, paths, etc.
  */
 export function isValidPublicDomain(domain) {
   if (!domain || typeof domain !== 'string') return false;
   const trimmed = domain.trim().toLowerCase();
   if (!trimmed) return false;
 
-  // Strip protocol if present
   let host = trimmed.replace(/^https?:\/\//, '');
-  // Strip anything after the host (path/query/fragment)
   host = host.split('/')[0].split('?')[0].split('#')[0];
   if (!host) return false;
 
-  // Reject localhost variants
   if (host === 'localhost' || host.endsWith('.localhost')) return false;
   if (host === '0.0.0.0') return false;
-
-  // Reject IP addresses (private AND public — screenshots of IPs look
-  // unprofessional and the field is meant for hotel domains)
   if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) return false;
-  if (/^\[[0-9a-f:]+\]$/.test(host)) return false; // IPv6 literal
-
-  // Must contain at least one dot (TLD)
+  if (/^\[[0-9a-f:]+\]$/.test(host)) return false;
   if (!host.includes('.')) return false;
 
-  // Must match a basic domain regex:
-  //   labels separated by dots, each label 1-63 chars, alphanumeric or
-  //   hyphen (but not starting/ending with hyphen)
   const domainRe = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/;
   if (!domainRe.test(host)) return false;
 
   return true;
+}
+
+/**
+ * Analyze a rates API response (from /api/rates/:apiHotelId).
+ * Extracts useful metadata for the admin UI:
+ *   - detected competitor (via myHotel: true flag)
+ *   - list of all competitors
+ *   - rooms available per channel (for informational display)
+ */
+export function analyzeRatesResponse(apiData) {
+  if (!apiData || !apiData.competitors) {
+    return { error: 'Empty or invalid response' };
+  }
+
+  let detectedCompetitorId = null;
+  let detectedCompetitorName = null;
+  for (const [compId, comp] of Object.entries(apiData.competitors)) {
+    if (comp.myHotel === true) {
+      detectedCompetitorId = parseInt(compId, 10);
+      detectedCompetitorName = comp.name || '';
+      break;
+    }
+  }
+
+  const competitorsList = Object.entries(apiData.competitors).map(
+    ([id, comp]) => ({
+      id: parseInt(id, 10),
+      name: comp.name || '',
+      shortName: comp.shortName || '',
+      myHotel: comp.myHotel === true,
+    })
+  );
+
+  const targetCompId = detectedCompetitorId || competitorsList[0]?.id;
+  const roomsByChannel = {};
+
+  if (targetCompId && apiData.competitorPrices) {
+    const seen = new Map();
+
+    for (const dayData of Object.values(apiData.competitorPrices)) {
+      const compData = dayData.competitors?.[targetCompId];
+      if (!compData || !compData.channels) continue;
+
+      for (const [channelId, channelData] of Object.entries(compData.channels)) {
+        if (!channelData.prices || channelData.prices.length === 0) continue;
+
+        if (!seen.has(channelId)) seen.set(channelId, new Map());
+        const channelRooms = seen.get(channelId);
+
+        for (const price of channelData.prices) {
+          const key = price.roomCode;
+          if (!key || channelRooms.has(key)) continue;
+          channelRooms.set(key, {
+            roomCode: price.roomCode,
+            roomName: price.roomName || '',
+            maxAdultOccupancy: price.maxAdultOccupancy || null,
+          });
+        }
+      }
+    }
+
+    for (const [channelId, roomMap] of seen.entries()) {
+      roomsByChannel[channelId] = Array.from(roomMap.values());
+    }
+  }
+
+  return {
+    screeningDate: apiData.screeningDate || null,
+    detectedCompetitorId,
+    detectedCompetitorName,
+    competitorsList,
+    roomsByChannel,
+  };
 }

@@ -1,17 +1,17 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import styles from './App.module.css';
 import {
-  SUPPORTED_LOCALES,
-  SUPPORTED_CURRENCIES,
-  POSITIONS,
   WIDGET_PREVIEW_URL,
   TABS,
+  LOCALES,
+  API_CHANNELS,
+  DEFAULT_CHANNELS_ENABLED,
 } from './constants.js';
 import {
-  parseRoomsText,
   buildConfig,
   buildPreviewUrl,
-  isValidPublicDomain,   
+  isValidPublicDomain,
+  analyzeRatesResponse,
 } from './utils.js';
 import PublishConfirmDialog from './PublishConfirmDialog.jsx';
 import HotelsLanding from './HotelsLanding.jsx';
@@ -170,27 +170,16 @@ function ConfigForm({ editingHotelId, onBack }) {
 
   const [form, setForm] = useState({
     hotelId: editingHotelId || '',
-    hotelName: 'Hôtel Demo',
-    hotelDomain: 'hotel-client.com',
+    hotelName: '',
+    hotelDomain: '',
     logoUrl: '',
-    csvUrl: 'https://docs.google.com/spreadsheets/d/e/.../pub?output=csv',
-    rooms: [
-      { id: 'deluxe-king', name: 'Deluxe King Room' },
-      { id: 'superior-twin', name: 'Superior Twin Room' },
-      { id: 'junior-suite', name: 'Junior Suite' },
-    ],
-    defaultRoomId: 'deluxe-king',
-    reserveUrl:
-      'https://book.hotel-client.com/?arrive={checkIn}&depart={checkOut}&room={roomId}',
-    channelLabels: {
-      booking: 'Booking.com',
-      expedia: 'Expedia',
-      trivago: 'Trivago',
-      hotels_com: 'Hotels.com',
-      agoda: 'Agoda',
-    },
+    apiHotelId: '',
+    apiCompetitorId: '',
+    channelsEnabled: [...DEFAULT_CHANNELS_ENABLED],
+    reserveUrl: '',
     currency: 'EUR',
     position: 'bottom-right',
+    size: 'small',
     brandColor: '#8b5a3c',
     backgroundColor: '#faf7f2',
     enabledLocales: ['en', 'fr', 'es', 'de', 'it'],
@@ -202,9 +191,6 @@ function ConfigForm({ editingHotelId, onBack }) {
     dataLayerName: 'dataLayer',
   });
 
-  const [roomsText, setRoomsText] = useState(
-    form.rooms.map((r) => `${r.id} | ${r.name}`).join('\n')
-  );
   const [device, setDevice] = useState('desktop');
   const [activeTab, setActiveTab] = useState('identity');
   const [publishState, setPublishState] = useState({ status: 'idle' });
@@ -233,14 +219,14 @@ function ConfigForm({ editingHotelId, onBack }) {
           hotelName: c.hotelName || '',
           hotelDomain: c.hotelDomain || '',
           logoUrl: c.logoUrl || '',
-          csvUrl: c.csvUrl || '',
-          rooms: c.roomOptions || [],
-          defaultRoomId: c.default_room_id || '',
+          apiHotelId: c.apiHotelId ? String(c.apiHotelId) : '',
+          apiCompetitorId: c.apiCompetitorId ? String(c.apiCompetitorId) : '',
+          channelsEnabled: c.channelsEnabled || [...DEFAULT_CHANNELS_ENABLED],
           reserveUrl: c.reserveUrl || '',
-          channelLabels: c.channelLabels || {},
           currency: c.currency || 'EUR',
           position: c.position || 'bottom-right',
-          brandColor: c.brandColor || '#1a1a1a',
+          size: c.size || 'small',
+          brandColor: c.brandColor || '#8b5a3c',
           backgroundColor: c.backgroundColor || '#faf7f2',
           enabledLocales: c.enabledLocales || ['en'],
           defaultLocale: c.defaultLocale || 'en',
@@ -250,9 +236,6 @@ function ConfigForm({ editingHotelId, onBack }) {
           analyticsEnabled: c.analytics?.enabled ?? true,
           dataLayerName: c.analytics?.dataLayerName || 'dataLayer',
         });
-        setRoomsText(
-          (c.roomOptions || []).map((r) => `${r.id} | ${r.name}`).join('\n')
-        );
         setLoadStatus('ready');
       })
       .catch((err) => {
@@ -285,13 +268,6 @@ function ConfigForm({ editingHotelId, onBack }) {
 
   function updateField(key, value) {
     setForm((f) => ({ ...f, [key]: value }));
-  }
-
-  function updateChannelLabel(key, value) {
-    setForm((f) => ({
-      ...f,
-      channelLabels: { ...f.channelLabels, [key]: value },
-    }));
   }
 
   function toggleLocale(locale) {
@@ -456,13 +432,7 @@ function ConfigForm({ editingHotelId, onBack }) {
               />
             )}
             {activeTab === 'data' && (
-              <DataTab
-                form={form}
-                updateField={updateField}
-                roomsText={roomsText}
-                setRoomsText={setRoomsText}
-                updateChannelLabel={updateChannelLabel}
-              />
+              <DataTab form={form} updateField={updateField} />
             )}
             {activeTab === 'appearance' && (
               <AppearanceTab form={form} updateField={updateField} />
@@ -707,82 +677,228 @@ function IdentityTab({ form, updateField, isEditMode }) {
   );
 }
 
-function DataTab({ form, updateField, roomsText, setRoomsText, updateChannelLabel }) {
+function DataTab({ form, updateField }) {
+  const [testStatus, setTestStatus] = useState('idle');
+  const [testError, setTestError] = useState('');
+  const [apiAnalysis, setApiAnalysis] = useState(null);
+
+  async function handleTestApi() {
+    if (!form.apiHotelId) {
+      setTestStatus('error');
+      setTestError('Please enter an API Hotel ID first.');
+      return;
+    }
+    setTestStatus('testing');
+    setTestError('');
+    setApiAnalysis(null);
+
+    const now = new Date();
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth() + 1;
+
+    try {
+      const res = await fetch(
+        `/api/rates/${encodeURIComponent(form.apiHotelId)}?year=${year}&month=${month}`
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+      const analysis = analyzeRatesResponse(data);
+      if (analysis.error) throw new Error(analysis.error);
+
+      setApiAnalysis(analysis);
+      setTestStatus('ok');
+
+      if (analysis.detectedCompetitorId && !form.apiCompetitorId) {
+        updateField('apiCompetitorId', String(analysis.detectedCompetitorId));
+      }
+    } catch (err) {
+      setTestStatus('error');
+      setTestError(err.message);
+    }
+  }
+
+  function toggleChannel(channelId) {
+    const current = form.channelsEnabled || [];
+    const enabled = current.includes(channelId)
+      ? current.filter((c) => c !== channelId)
+      : [...current, channelId];
+    updateField('channelsEnabled', enabled);
+  }
+
   return (
     <>
-      <h2 className={styles.tabTitle}>Data source</h2>
+      <h2 className={styles.tabTitle}>Data</h2>
       <p className={styles.tabHint}>
-        Pricing CSV, room inventory, and channel labels.
+        Rates are fetched live from the AvailPro RateScreener API.
       </p>
 
       <label className={styles.field}>
-        <span>Google Sheet CSV URL</span>
+        <span>API Hotel ID</span>
         <input
-          type="text"
-          value={form.csvUrl}
-          onChange={(e) => updateField('csvUrl', e.target.value)}
-        />
-      </label>
-
-      <label className={styles.field}>
-        <span>Rooms</span>
-        <textarea
-          rows={6}
-          value={roomsText}
-          onChange={(e) => setRoomsText(e.target.value)}
-          placeholder="deluxe-king | Deluxe King Room"
+          type="number"
+          value={form.apiHotelId || ''}
+          onChange={(e) => updateField('apiHotelId', e.target.value)}
+          placeholder="e.g. 20917"
         />
         <small>
-          One per line, format: <code>id | name</code>
+          The unique hotel ID provided by AvailPro for this property.
         </small>
       </label>
 
-      {form.rooms.length > 0 && (
-        <label className={styles.field}>
-          <span>Default room</span>
-          <select
-            value={form.defaultRoomId}
-            onChange={(e) => updateField('defaultRoomId', e.target.value)}
-          >
-            {form.rooms.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </label>
+      <label className={styles.field}>
+        <span>Competitor ID for this hotel</span>
+        <input
+          type="number"
+          value={form.apiCompetitorId || ''}
+          onChange={(e) => updateField('apiCompetitorId', e.target.value)}
+          placeholder="Auto-detected when you test the connection"
+        />
+        <small>
+          Normally detected automatically via <code>myHotel: true</code>.
+          Set it here only if auto-detection fails.
+        </small>
+      </label>
+
+      <div className={styles.fieldRow}>
+        <button
+          type="button"
+          onClick={handleTestApi}
+          disabled={testStatus === 'testing' || !form.apiHotelId}
+          className={styles.secondaryBtn}
+        >
+          {testStatus === 'testing' ? 'Testing…' : 'Test API connection'}
+        </button>
+      </div>
+
+      {testStatus === 'error' && (
+        <div className={styles.errorBox}>
+          <strong>Connection failed</strong>
+          <p>{testError}</p>
+        </div>
       )}
 
-      <label className={styles.field}>
-        <span>Reserve URL</span>
-        <input
-          type="text"
-          value={form.reserveUrl}
-          onChange={(e) => updateField('reserveUrl', e.target.value)}
-        />
-        <small>
-          Use <code>{'{checkIn}'}</code>, <code>{'{checkOut}'}</code>,{' '}
-          <code>{'{roomId}'}</code> as placeholders.
-        </small>
-      </label>
+      {testStatus === 'ok' && apiAnalysis && (
+        <div className={styles.apiTestResult}>
+          <div className={styles.apiTestResultHeader}>
+            <strong>✓ Connection OK</strong>
+            <span>
+              Screening:{' '}
+              {apiAnalysis.screeningDate
+                ? new Date(apiAnalysis.screeningDate).toLocaleString()
+                : 'n/a'}
+            </span>
+          </div>
 
-      <h3 className={styles.subTitle}>OTA channel labels</h3>
+          <div className={styles.apiTestResultSection}>
+            <h4>Detected competitor (myHotel)</h4>
+            {apiAnalysis.detectedCompetitorId ? (
+              <p>
+                <strong>{apiAnalysis.detectedCompetitorName}</strong>{' '}
+                <code>#{apiAnalysis.detectedCompetitorId}</code>
+              </p>
+            ) : (
+              <p className={styles.apiTestResultWarn}>
+                No <code>myHotel</code> flag. Please set the competitor ID
+                manually.
+              </p>
+            )}
+          </div>
+
+          <div className={styles.apiTestResultSection}>
+            <h4>Rooms detected (informational)</h4>
+            {Object.keys(apiAnalysis.roomsByChannel).length === 0 ? (
+              <p className={styles.apiTestResultWarn}>
+                No rooms found. Check that the competitor ID is correct.
+              </p>
+            ) : (
+              Object.entries(apiAnalysis.roomsByChannel).map(([chId, rooms]) => {
+                const meta = API_CHANNELS[chId];
+                return (
+                  <div key={chId} className={styles.apiChannelGroup}>
+                    <h5>
+                      {meta?.name || `Channel ${chId}`}
+                      <span className={styles.apiChannelCount}>
+                        {rooms.length} room{rooms.length !== 1 ? 's' : ''}
+                      </span>
+                    </h5>
+                    <ul className={styles.apiRoomList}>
+                      {rooms.map((r) => (
+                        <li key={r.roomCode}>
+                          <code>{r.roomCode}</code>
+                          <span>{r.roomName}</span>
+                          {r.maxAdultOccupancy && (
+                            <span className={styles.apiRoomOccupancy}>
+                              max {r.maxAdultOccupancy} pax
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })
+            )}
+            <p className={styles.tabHint} style={{ marginTop: 8 }}>
+              Informational only. The widget shows the single cheapest price
+              across all rooms and rate conditions.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <hr className={styles.sectionDivider} />
+
+      <h3 className={styles.subTabTitle}>Channels to display</h3>
       <p className={styles.tabHint}>
-        Labels shown next to each OTA price. The key on the left must match
-        the column name in your CSV.
+        Only checked channels appear in the price comparison.
       </p>
-      <div className={styles.twoCol}>
-        {Object.entries(form.channelLabels).map(([key, value]) => (
-          <label key={key} className={styles.field}>
-            <span>{key}</span>
+      <div className={styles.checkboxGroup}>
+        {Object.entries(API_CHANNELS).map(([id, meta]) => (
+          <label key={id} className={styles.checkboxLine}>
             <input
-              type="text"
-              value={value}
-              onChange={(e) => updateChannelLabel(key, e.target.value)}
+              type="checkbox"
+              checked={(form.channelsEnabled || []).includes(parseInt(id, 10))}
+              onChange={() => toggleChannel(parseInt(id, 10))}
             />
+            <span>
+              {meta.name}
+              {meta.isDirect && (
+                <span className={styles.apiTestResultBadge}> direct</span>
+              )}
+            </span>
           </label>
         ))}
       </div>
+
+      <hr className={styles.sectionDivider} />
+
+      <label className={styles.field}>
+        <span>Reserve URL template</span>
+        <input
+          type="text"
+          value={form.reserveUrl || ''}
+          onChange={(e) => updateField('reserveUrl', e.target.value)}
+          placeholder="https://book.hotel.com/?arrive={checkIn}&depart={checkOut}"
+        />
+        <small>
+          Placeholders available: <code>{'{checkIn}'}</code>,{' '}
+          <code>{'{checkOut}'}</code>.
+        </small>
+      </label>
+
+      <label className={styles.field}>
+        <span>Currency</span>
+        <select
+          value={form.currency || 'EUR'}
+          onChange={(e) => updateField('currency', e.target.value)}
+        >
+          <option value="EUR">EUR</option>
+          <option value="USD">USD</option>
+          <option value="GBP">GBP</option>
+          <option value="CHF">CHF</option>
+        </select>
+      </label>
     </>
   );
 }
