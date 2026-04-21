@@ -151,8 +151,6 @@ app.post('/api/auth', (req, res) => {
   }
   return res.status(401).json({ error: 'Wrong password' });
 });
-
-app.options('/api/rates/:apiHotelId', ratesCors);
 app.get('/api/current-config/:hotelId', async (req, res) => {
   try {
     const { hotelId } = req.params;
