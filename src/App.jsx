@@ -6,6 +6,12 @@ import {
   LOCALES,
   API_CHANNELS,
   DEFAULT_CHANNELS_ENABLED,
+  POSITIONS,
+  SIZES,
+  AUTO_OPEN_MODES,
+  AUTO_OPEN_DELAYS,
+  SCROLL_THRESHOLDS,
+  CURRENCIES,
 } from './constants.js';
 import {
   buildConfig,

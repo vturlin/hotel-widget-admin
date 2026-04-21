@@ -1,18 +1,15 @@
-// Admin UI constants — kept separate from App.jsx for clarity.
+// Admin UI constants
 
-// URL of the widget's preview page (transparent background, no demo content)
 export const WIDGET_PREVIEW_URL =
   'https://vturlin.github.io/best-price-widget/transparent.html';
 
 // Rate screener API channels (from AvailPro)
-// These IDs match the API response; names are what we show in the widget.
 export const API_CHANNELS = {
   17: { name: 'Direct', slug: 'direct',  isDirect: true },
   10: { name: 'Booking.com', slug: 'booking', isDirect: false },
   9:  { name: 'Expedia',  slug: 'expedia', isDirect: false },
 };
 
-// Default: show all channels
 export const DEFAULT_CHANNELS_ENABLED = [17, 10, 9];
 
 // Tabs in the admin form
@@ -25,7 +22,48 @@ export const TABS = [
   { key: 'publish',    label: 'Publish' },
 ];
 
-// Supported locales in the widget
+// Widget position on screen
+export const POSITIONS = [
+  { value: 'bottom-right', label: 'Bottom right' },
+  { value: 'bottom-left',  label: 'Bottom left' },
+  { value: 'top-right',    label: 'Top right' },
+  { value: 'top-left',     label: 'Top left' },
+];
+
+// Widget size
+export const SIZES = [
+  { value: 'small',  label: 'Small (default)' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'large',  label: 'Large' },
+];
+
+// Auto-open modes
+export const AUTO_OPEN_MODES = [
+  { value: 'disabled',       label: 'Disabled' },
+  { value: 'time',           label: 'After a delay' },
+  { value: 'scroll',         label: 'On scroll' },
+  { value: 'time_or_scroll', label: 'Delay or scroll (first wins)' },
+];
+
+// Auto-open delay options
+export const AUTO_OPEN_DELAYS = [
+  { value: 3,  label: '3 seconds' },
+  { value: 5,  label: '5 seconds' },
+  { value: 8,  label: '8 seconds (recommended)' },
+  { value: 15, label: '15 seconds' },
+  { value: 30, label: '30 seconds' },
+];
+
+// Scroll thresholds
+export const SCROLL_THRESHOLDS = [
+  { value: 25, label: '25% of page' },
+  { value: 50, label: '50% of page' },
+];
+
+// Currencies
+export const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF'];
+
+// Supported locales
 export const LOCALES = [
   { code: 'en', name: 'English' },
   { code: 'fr', name: 'Français' },
