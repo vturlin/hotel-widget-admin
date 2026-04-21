@@ -92,7 +92,9 @@ async function fetchRatesFromUpstream(apiHotelId, year, month) {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Upstream ${res.status}: ${text.slice(0, 200)}`);
+    const err = new Error(`Upstream ${res.status}: ${text.slice(0, 200)}`);
+    err.upstreamStatus = res.status;
+    throw err;
   }
 
   return res.json();
@@ -532,7 +534,8 @@ app.get('/api/rates/:apiHotelId', async (req, res) => {
     return res.json(data);
   } catch (err) {
     console.error('[api/rates]', err);
-    return res.status(500).json({ error: err.message });
+    const status = err.upstreamStatus || 500;
+    return res.status(status).json({ error: err.message });
   }
 });
 
