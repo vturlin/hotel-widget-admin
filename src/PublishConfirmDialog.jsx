@@ -80,20 +80,12 @@ export default function PublishConfirmDialog({
               <SummaryRow label="Hotel ID" value={hotelId} mono />
               <SummaryRow label="Hotel name" value={config.hotelName} />
               <SummaryRow
-                label="Rooms"
-                value={`${config.roomOptions?.length || 0} configured`}
-              />
-              <SummaryRow
                 label="Languages"
                 value={`${config.enabledLocales?.length || 0} enabled (default: ${config.defaultLocale})`}
               />
               <SummaryRow
                 label="Auto-open"
                 value={formatAutoOpen(config)}
-              />
-              <SummaryRow
-                label="OTA channels"
-                value={`${Object.keys(config.channelLabels || {}).length} configured`}
               />
               <SummaryRow
                 label="Analytics"

@@ -59,9 +59,6 @@ export const SCROLL_THRESHOLDS = [
   { value: 50, label: '50% of page' },
 ];
 
-// Currencies
-export const SUPPORTED_CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF'];
-
 // Supported locales
 export const SUPPORTED_LOCALES = [
   { code: 'en', name: 'English' },
