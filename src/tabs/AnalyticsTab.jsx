@@ -25,7 +25,7 @@ export default function AnalyticsTab({ form, updateField }) {
         }
       />
 
-      <GroupCard title="Tracking" hint="Connect to your existing analytics setup.">
+      <GroupCard title="Google Tag Manager / dataLayer" hint="Connect to your existing analytics setup.">
         <Toggle
           checked={form.analyticsEnabled}
           onChange={(v) => updateField('analyticsEnabled', v)}
@@ -48,6 +48,32 @@ export default function AnalyticsTab({ form, updateField }) {
             />
           </Field>
         )}
+      </GroupCard>
+
+      <GroupCard
+        title="First-party tracker (BigQuery)"
+        hint={
+          <>
+            Sends widget_loaded / widget_opened / book_clicked to your own backend, gated on{' '}
+            <code className={styles.inlineCode}>window.HPW_TRACKER_CONSENT</code>. Independent of GTM.
+          </>
+        }
+      >
+        <Field
+          label="Tracker endpoint"
+          optional
+          hint={
+            <>
+              URL of your <code className={styles.inlineCode}>/api/track</code> endpoint. Leave empty to disable. The widget posts events here when consent is granted on the host page.
+            </>
+          }
+        >
+          <TextInput
+            value={form.trackerEndpoint || ''}
+            onChange={(v) => updateField('trackerEndpoint', v)}
+            placeholder="https://your-admin.run.app/api/track"
+          />
+        </Field>
       </GroupCard>
 
       <GroupCard

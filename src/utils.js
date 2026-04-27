@@ -64,6 +64,9 @@ export function buildConfig(form) {
       enabled: !!form.analyticsEnabled,
       dataLayerName: form.dataLayerName || 'dataLayer',
     },
+    // First-party tracker endpoint (Phase 1). Empty string means the
+    // widget will not fire any tracker requests on this hotel.
+    trackerEndpoint: (form.trackerEndpoint || '').trim() || '',
   };
 }
 

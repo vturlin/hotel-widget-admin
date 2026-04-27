@@ -22,6 +22,7 @@ const FIELD_LABELS = {
   autoOpenScrollPercent: 'Scroll threshold',
   analyticsEnabled: 'Analytics enabled',
   dataLayerName: 'DataLayer variable',
+  trackerEndpoint: 'Tracker endpoint',
 };
 
 function shallowEqual(a, b) {

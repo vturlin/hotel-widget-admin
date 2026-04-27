@@ -33,6 +33,7 @@ const DEFAULT_FORM = {
   autoOpenScrollPercent: 50,
   analyticsEnabled: true,
   dataLayerName: 'dataLayer',
+  trackerEndpoint: '',
 };
 
 export default function ConfigForm({ editingHotelId, onBack }) {
@@ -106,6 +107,7 @@ export default function ConfigForm({ editingHotelId, onBack }) {
           autoOpenScrollPercent: c.autoOpenScrollPercent || 50,
           analyticsEnabled: c.analytics?.enabled ?? true,
           dataLayerName: c.analytics?.dataLayerName || 'dataLayer',
+          trackerEndpoint: c.trackerEndpoint || '',
         };
         setForm(loaded);
         lastSnapshotRef.current = loaded;
