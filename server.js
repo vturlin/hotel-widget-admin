@@ -31,6 +31,7 @@ import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import NodeCache from 'node-cache';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { BigQuery } from '@google-cloud/bigquery';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -109,6 +110,11 @@ async function fetchRatesFromUpstream(apiHotelId, year, month) {
 }
 
 const app = express();
+
+// Cloud Run terminates TLS at its load balancer and forwards via X-
+// Forwarded-For. Trust the first hop so req.ip and rate-limit keys
+// resolve to the real client IP instead of the LB.
+app.set('trust proxy', 1);
 
 // ─── Security headers ───────────────────────────────────────────────
 // Content Security Policy — restrict what the admin UI can load.
@@ -629,7 +635,64 @@ const trackerCors = cors({
   credentials: true,
 });
 
+// Per-IP rate limit. 120 requests/min is well above what one user could
+// generate naturally (3 events × widget reloads), but slams the door on
+// scripts firing thousands of fake events. Counts are per Cloud Run
+// instance — if Cloud Run scales out, the effective global limit is
+// `120 * instance_count`. Acceptable for our scale; switch to a
+// distributed store (Redis) only if abuse appears.
+const trackerLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 120,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'rate limit exceeded' },
+  // Cloud Run sets X-Forwarded-For; trust it so we rate-limit per
+  // real client IP, not per-LB.
+  keyGenerator: (req) =>
+    req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
+    req.ip,
+});
+
+// Valid-hotel-ID guard. Periodically pulls the list of published configs
+// from GitHub so we can reject events for hotels that don't exist.
+// Fail-open: if GitHub is unreachable, we let the event through rather
+// than dropping legitimate traffic.
+const validHotelIdsCache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
+
+async function getValidHotelIds() {
+  const cached = validHotelIdsCache.get('ids');
+  if (cached) return cached;
+
+  const owner = process.env.GITHUB_OWNER;
+  const repo = process.env.GITHUB_REPO;
+  if (!owner || !repo || !process.env.GITHUB_TOKEN) {
+    return null;
+  }
+  const branch = process.env.GITHUB_BRANCH || 'main';
+  try {
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/public/configs?ref=${branch}`;
+    const r = await fetch(url, { headers: githubHeaders() });
+    if (!r.ok) {
+      console.warn('[tracker] valid hotel IDs fetch failed', r.status);
+      return null;
+    }
+    const files = await r.json();
+    const ids = new Set(
+      files
+        .filter((f) => f.type === 'file' && f.name.endsWith('.json'))
+        .map((f) => f.name.slice(0, -5))
+    );
+    validHotelIdsCache.set('ids', ids);
+    return ids;
+  } catch (err) {
+    console.warn('[tracker] valid hotel IDs fetch threw', err.message);
+    return null;
+  }
+}
+
 app.use('/api/track', trackerCors);
+app.use('/api/track', trackerLimiter);
 
 app.post('/api/track', async (req, res) => {
   const { uid, hotelId, event, payload, clientTs } = req.body || {};
@@ -643,6 +706,14 @@ app.post('/api/track', async (req, res) => {
   }
   if (typeof event !== 'string' || !TRACKER_KNOWN_EVENTS.has(event)) {
     return res.status(400).json({ error: 'invalid event' });
+  }
+
+  // Reject events for hotels that don't exist in the published configs.
+  // Falls open if the lookup itself fails (GitHub down) so a transient
+  // outage doesn't blackhole legitimate traffic.
+  const validIds = await getValidHotelIds();
+  if (validIds && !validIds.has(hotelId)) {
+    return res.status(404).json({ error: 'unknown hotelId' });
   }
 
   const row = {
