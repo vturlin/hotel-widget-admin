@@ -40,27 +40,85 @@ ip_hash:STRING:NULLABLE
 ## 2. Create a service account
 
 IAM → Service accounts → Create. Grant role **BigQuery Data Editor**
-(restricted to the dataset) and **BigQuery Job User** at project level
-if you plan to query later from the same account.
+on the dataset (recommended) or at project level. Add **BigQuery Job
+User** at project level if you plan to query from the same account
+(needed by phase 2's stats UI).
 
-Create a JSON key. Save the file somewhere the admin server can read
-it; do **not** commit it.
+Note the service-account email — it looks like
+`tracker-writer@my-hotel-prod.iam.gserviceaccount.com`. **Don't** create
+a JSON key yet; it's only required for scenario B below.
 
 ## 3. Configure the admin server
 
-Set the four env vars (Cloud Run console / `.env` / wherever you keep
-secrets):
+Three env vars are mandatory regardless of how you authenticate:
 
 | Variable | Example | Purpose |
 |---|---|---|
 | `BQ_PROJECT_ID` | `my-hotel-prod` | GCP project that owns the dataset |
 | `BQ_DATASET` | `hotel_widget` | dataset name (default: `hotel_widget`) |
 | `BQ_TABLE` | `events` | table name (default: `events`) |
-| `GOOGLE_APPLICATION_CREDENTIALS` | `/secrets/sa.json` | path to the service-account JSON |
 
-On startup the server logs `[tracker] BigQuery client ready (...)` if
-the connection works, or `events will be logged to stdout only` if any
-of the env vars are missing.
+The fourth piece — *how the server proves it's allowed to write to
+BigQuery* — depends on where the server runs.
+
+### A. Cloud Run with an attached service account *(recommended for prod)*
+
+No JSON file, no `GOOGLE_APPLICATION_CREDENTIALS`. You attach the
+service account to the Cloud Run service and the SDK reads credentials
+from the metadata server automatically.
+
+```bash
+gcloud run services update hotel-widget-admin \
+  --region=europe-west1 \
+  --service-account=tracker-writer@my-hotel-prod.iam.gserviceaccount.com
+```
+
+Or in the Cloud Run console: *Edit & deploy new revision* → *Security*
+tab → *Service account* → pick `tracker-writer@…`.
+
+This is the most secure option: no key material is generated, stored,
+or rotated. Permissions are revocable in one click via IAM.
+
+### B. Anywhere else, with a JSON key file
+
+Use this if the admin runs on a VM, in Docker outside GCP, on Vercel,
+on your laptop in long-term dev mode, etc.
+
+1. IAM → Service accounts → click your SA → *Keys* tab → *Add key* →
+   *Create new key* → *JSON*. A `*.json` file downloads.
+2. Put it on the server filesystem at a path **outside the repo**:
+   - VM: `/etc/secrets/sa.json` (locked down to the service user).
+   - Docker on Cloud Run with mounted secret: store the JSON in
+     [Secret Manager](https://cloud.google.com/secret-manager), then
+     mount it as `/secrets/sa.json` via Cloud Run's *Secrets* tab.
+   - Docker locally: bind-mount your `~/keys/sa.json` to `/secrets/sa.json`.
+3. Set `GOOGLE_APPLICATION_CREDENTIALS=/secrets/sa.json` (or wherever
+   you put it) as an env var.
+
+⚠️ Never commit the JSON. Add `*.json` to `.gitignore` if it would
+otherwise live next to your code.
+
+### C. Local development on your laptop
+
+Skip the JSON key entirely. Run once:
+
+```bash
+gcloud auth application-default login
+```
+
+This caches your **user** credentials in `~/.config/gcloud/`. The SDK
+finds them automatically — no `GOOGLE_APPLICATION_CREDENTIALS` to set.
+The downside: every BigQuery call charges *your* GCP user, not the
+service account, which is fine for dev and ugly for prod.
+
+### Verifying
+
+On startup the server logs:
+- `[tracker] BigQuery client ready (project.dataset.table)` — works.
+- `events will be logged to stdout only` — `BQ_PROJECT_ID` is missing,
+  the endpoint accepts events but doesn't insert.
+- A first `insert` failure with `Could not load the default
+  credentials` — none of A/B/C is in place; pick one.
 
 ## 4. Configure each hotel config
 

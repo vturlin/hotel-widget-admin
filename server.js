@@ -592,7 +592,13 @@ const TRACKER_KNOWN_EVENTS = new Set([
 ]);
 
 let bqClient = null;
-if (BQ_PROJECT && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+if (BQ_PROJECT) {
+  // Auth resolution is left to @google-cloud/bigquery's default chain:
+  //   1. attached service account (Cloud Run, GKE, GCE metadata server)
+  //   2. GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json
+  //   3. gcloud auth application-default login (local dev)
+  // We just need the project id; the SDK fails the first insert with a
+  // clear auth error if none of the above is set.
   try {
     bqClient = new BigQuery({ projectId: BQ_PROJECT });
     console.info(`[tracker] BigQuery client ready (${BQ_PROJECT}.${BQ_DATASET}.${BQ_TABLE})`);
@@ -602,7 +608,7 @@ if (BQ_PROJECT && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
   }
 } else {
   console.warn(
-    '[tracker] BQ_PROJECT_ID and/or GOOGLE_APPLICATION_CREDENTIALS not set — events will be logged to stdout only'
+    '[tracker] BQ_PROJECT_ID not set — events will be logged to stdout only'
   );
 }
 
