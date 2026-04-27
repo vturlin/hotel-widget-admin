@@ -4,7 +4,6 @@ const FIELD_LABELS = {
   hotelId: 'Hotel ID',
   hotelName: 'Hotel name',
   hotelDomain: 'Client domain',
-  logoUrl: 'Logo URL',
   apiHotelId: 'API Hotel ID',
   apiCompetitorId: 'Competitor ID',
   channelsEnabled: 'Channels',

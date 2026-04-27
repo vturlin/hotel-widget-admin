@@ -56,18 +56,6 @@ export default function IdentityTab({ form, updateField, isEditMode }) {
             prefix="https://"
           />
         </Field>
-
-        <Field
-          label="Logo URL"
-          optional
-          hint="If provided, shown in the widget header instead of the hotel name."
-        >
-          <TextInput
-            value={form.logoUrl}
-            onChange={(v) => updateField('logoUrl', v)}
-            placeholder="https://..."
-          />
-        </Field>
       </GroupCard>
     </>
   );

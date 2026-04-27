@@ -39,7 +39,6 @@ export function buildConfig(form) {
   return {
     hotelName: form.hotelName || '',
     hotelDomain: form.hotelDomain || '',
-    logoUrl: form.logoUrl || '',
     // Data source — always API
     apiHotelId: parseInt(form.apiHotelId, 10) || null,
     apiCompetitorId: form.apiCompetitorId
