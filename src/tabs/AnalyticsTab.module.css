@@ -1,0 +1,44 @@
+.eventList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.eventRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid #F2EFEC;
+}
+
+.eventRow:last-child {
+  border-bottom: none;
+}
+
+.eventCode {
+  font-size: var(--font-size-sm);
+  color: var(--color-brand-primary);
+  background: #F7F4FB;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+  flex-shrink: 0;
+  font-family: var(--font-family-mono);
+}
+
+.eventDesc {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  flex: 1;
+  padding-top: 2px;
+}
+
+.inlineCode {
+  background: #F2EFEC;
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-mono);
+  color: var(--color-text-primary);
+}
