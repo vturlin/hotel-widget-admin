@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Widget admin — design exploration</title>
+<link rel="stylesheet" href="tokens.css"/>
+<style>
+  html, body { margin: 0; padding: 0; background: #F5F2EE; font-family: "Open Sans", system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="shared.jsx"></script>
+<script type="text/babel" src="v1-classic.jsx"></script>
+<script type="text/babel" src="v2-floating.jsx"></script>
+<script type="text/babel" src="v3-stacked.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+function App() {
+  return (
+    <DesignCanvas title="Widget admin — design exploration" subtitle="Three layouts × all six tabs, against the D-EDGE CRM design system. The first row compares overall layouts; the second walks through every tab in the chosen V1 direction.">
+      <DCSection id="layouts" title="Layout variations (Identity tab)">
+        <DCArtboard id="v1" label="V1 — Classic split, polished" width={1440} height={900}>
+          <V1Classic initialTab="identity"/>
+        </DCArtboard>
+        <DCArtboard id="v2" label="V2 — Full-bleed preview, floating panel" width={1440} height={900}>
+          <V2Floating/>
+        </DCArtboard>
+        <DCArtboard id="v3" label="V3 — Stacked: config-rail left, tall preview right" width={1440} height={900}>
+          <V3Stacked/>
+        </DCArtboard>
+      </DCSection>
+      <DCSection id="tabs" title="V1 — all six tabs">
+        <DCArtboard id="t-identity" label="Identity" width={1440} height={900}>
+          <V1Classic initialTab="identity"/>
+        </DCArtboard>
+        <DCArtboard id="t-data" label="Data" width={1440} height={900}>
+          <V1Classic initialTab="data"/>
+        </DCArtboard>
+        <DCArtboard id="t-appearance" label="Appearance" width={1440} height={900}>
+          <V1Classic initialTab="appearance"/>
+        </DCArtboard>
+        <DCArtboard id="t-languages" label="Languages" width={1440} height={900}>
+          <V1Classic initialTab="languages"/>
+        </DCArtboard>
+        <DCArtboard id="t-analytics" label="Analytics" width={1440} height={900}>
+          <V1Classic initialTab="analytics"/>
+        </DCArtboard>
+        <DCArtboard id="t-publish" label="Publish" width={1440} height={900}>
+          <V1Classic initialTab="publish"/>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

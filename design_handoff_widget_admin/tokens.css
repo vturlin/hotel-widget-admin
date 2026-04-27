@@ -1,0 +1,280 @@
+/* =========================================================
+   D-EDGE CRM — Design Tokens
+   Source: brand audit, April 2026
+   Font: Open Sans (Google Fonts CDN)
+   ========================================================= */
+
+@font-face {
+  font-family: "Open Sans";
+  src: url("fonts/OpenSans-VariableFont_wdth_wght.ttf") format("truetype-variations"),
+       url("fonts/OpenSans-VariableFont_wdth_wght.ttf") format("truetype");
+  font-weight: 300 800;
+  font-stretch: 75% 125%;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Open Sans";
+  src: url("fonts/OpenSans-Italic-VariableFont_wdth_wght.ttf") format("truetype-variations"),
+       url("fonts/OpenSans-Italic-VariableFont_wdth_wght.ttf") format("truetype");
+  font-weight: 300 800;
+  font-stretch: 75% 125%;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  /* ---------- COLOUR: brand ---------- */
+  --color-brand-primary:     #432975; /* sidebar, primary btn, active tab, table links */
+  --color-brand-secondary:   #7E65AE; /* sidebar hero tint, active nav item */
+  --color-brand-light:       #ECE2FF; /* badge bg */
+  --color-brand-text-light:  #8764C9; /* badge text */
+
+  /* ---------- COLOUR: neutrals ---------- */
+  --color-bg-page:           #FBFAF9; /* app background */
+  --color-bg-surface:        #FFFFFF; /* cards, navbar, table rows */
+  --color-bg-nav-active:     #F7F7F7; /* secondary nav active/hover */
+  --color-border:            #E7E5E4; /* hairline separators */
+
+  --color-text-primary:      #424242; /* body, H1 */
+  --color-text-secondary:    #666666; /* muted, table headers, inactive tabs */
+  --color-text-on-dark:      #FFFFFF; /* text on sidebar & primary buttons */
+
+  --color-tooltip-bg:        #222222;
+
+  /* ---------- COLOUR: state ---------- */
+  --color-error:             #EF4444; /* red-500, alert dots */
+
+  /* ---------- COLOUR: avatars (pastel/dark pairs) ---------- */
+  --avatar-rose-bg:          #FBCFE8;
+  --avatar-rose-fg:          #A41752;
+  --avatar-blue-bg:          #BFDBFE;
+  --avatar-blue-fg:          #173DA6;
+  --avatar-purple-bg:        #BBA8E1;
+  --avatar-purple-fg:        #432975;
+  --avatar-orange-bg:        #FED7AA;
+  --avatar-orange-fg:        #92310A;
+  --avatar-cyan-bg:          #A5F3FC;
+  --avatar-cyan-fg:          #0C5C72;
+
+  /* ---------- TYPE ---------- */
+  --font-family:             "Open Sans", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+
+  --font-size-xs:            10px; /* badges */
+  --font-size-sm:            12px; /* avatars, table headers */
+  --font-size-base:          13px; /* top nav, body small */
+  --font-size-md:            14px; /* body, sidebar, buttons */
+  --font-size-lg:            15px; /* breadcrumb */
+  --font-size-xl:            20px; /* page H1 */
+
+  --font-weight-regular:     400;
+  --font-weight-medium:      500;
+  --font-weight-semibold:    600;
+  --font-weight-bold:        700;
+
+  --line-height-h1:          30px;
+
+  /* ---------- RADIUS ---------- */
+  --radius-none:             0px;
+  --radius-xs:               2px;   /* badges, sidebar active item */
+  --radius-sm:               4px;   /* inputs */
+  --radius-md:               6px;   /* buttons, tabs, primary cards */
+  --radius-lg:               12px;  /* secondary (table) cards */
+  --radius-full:             9999px;
+
+  /* ---------- SHADOW ---------- */
+  --shadow-none:             none;
+  --shadow-card:             0px 4px 8px rgba(51,51,51,0.1), 0px 0px 1px rgba(51,51,51,0.3);
+
+  /* ---------- SPACING ---------- */
+  --space-1:                 4px;
+  --space-2:                 8px;
+  --space-3:                 12px;
+  --space-4:                 16px;
+  --space-6:                 24px;
+
+  /* ---------- DIMENSIONS ---------- */
+  --sidebar-width:           235px;
+  --topnav-height:           50px;
+  --btn-icon-size:           40px;
+  --avatar-size:             28px;
+  --input-height:            40px;
+  --sidebar-hero-height:     120px;
+  --sidebar-section-h:       44px;
+}
+
+/* =========================================================
+   Semantic defaults
+   ========================================================= */
+
+html, body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  background: var(--color-bg-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, .h1 {
+  font-family: var(--font-family);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-h1);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+h2, .h2 {
+  font-family: var(--font-family);
+  font-size: 16px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+p, .body {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+
+.body-sm {
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+a {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+/* ---------- Components ---------- */
+
+.badge {
+  display: inline-block;
+  background: var(--color-brand-light);
+  color: var(--color-brand-text-light);
+  border-radius: var(--radius-xs);
+  padding: 0 4px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 16px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.btn-primary {
+  background: var(--color-brand-primary);
+  color: var(--color-text-on-dark);
+}
+.btn-primary:hover { background: #372062; }
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-brand-primary);
+  border: 1px solid var(--color-brand-primary);
+}
+.btn-outline:hover { background: rgba(67,41,117,0.06); }
+
+.btn-icon {
+  width: var(--btn-icon-size);
+  height: var(--btn-icon-size);
+  padding: 0;
+  justify-content: center;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-primary);
+  padding: 6px 22px;
+  font-size: var(--font-size-base);
+}
+.btn-ghost[aria-current="true"],
+.btn-ghost.is-active { background: var(--color-bg-nav-active); }
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.tab[aria-selected="true"],
+.tab.is-active {
+  background: var(--color-brand-primary);
+  color: var(--color-text-on-dark);
+}
+
+.card {
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  border: none;
+}
+.card-secondary {
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  padding: var(--space-6);
+  box-shadow: none;
+}
+
+.input {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  height: var(--input-height);
+  padding: 0 12px;
+  font-size: var(--font-size-md);
+  font-family: var(--font-family);
+  color: var(--color-text-primary);
+  outline: none;
+}
+.input:focus { border-color: var(--color-brand-primary); }
+
+.avatar {
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  user-select: none;
+}
+
+.table-header {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
