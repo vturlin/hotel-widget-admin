@@ -1,7 +1,7 @@
 import {
   POSITIONS,
   SIZES,
-  TOGGLE_DESIGNS,
+  WIDGET_DESIGNS,
   AUTO_OPEN_MODES,
   AUTO_OPEN_DELAYS,
   SCROLL_THRESHOLDS,
@@ -57,14 +57,14 @@ export default function AppearanceTab({
       </GroupCard>
 
       <GroupCard
-        title="Toggle design"
-        hint="The visual treatment of the closed-state pill."
+        title="Widget design"
+        hint="Picks both the closed-state and the open-state visuals."
       >
         <Field label="Design">
           <Select
-            value={form.toggleDesign || 'default'}
-            onChange={(v) => updateField('toggleDesign', v)}
-            options={TOGGLE_DESIGNS}
+            value={form.widgetDesign || 'default'}
+            onChange={(v) => updateField('widgetDesign', v)}
+            options={WIDGET_DESIGNS}
           />
         </Field>
       </GroupCard>

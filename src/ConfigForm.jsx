@@ -25,7 +25,7 @@ const DEFAULT_FORM = {
   currency: 'EUR',
   position: 'bottom-right',
   size: 'small',
-  toggleDesign: 'default',
+  widgetDesign: 'default',
   brandColor: '#8b5a3c',
   toggleColor: '',
   backgroundColor: '#faf7f2',
@@ -104,7 +104,12 @@ export default function ConfigForm({ editingHotelId, onBack }) {
           currency: c.currency || 'EUR',
           position: c.position || 'bottom-right',
           size: c.size || 'small',
-          toggleDesign: c.toggleDesign === 'ticker' ? 'ticker' : 'default',
+          // Backwards-compat: previous version stored this as
+          // toggleDesign. Read either, prefer the new key.
+          widgetDesign:
+            c.widgetDesign === 'ticker' || c.toggleDesign === 'ticker'
+              ? 'ticker'
+              : 'default',
           brandColor: c.brandColor || '#8b5a3c',
           toggleColor: c.toggleColor || '',
           backgroundColor: c.backgroundColor || '#faf7f2',

@@ -47,12 +47,13 @@ export const SIZES = [
   { value: 'large',  label: 'Large' },
 ];
 
-// Closed-state toggle design. 'default' is the original wax-seal
-// + cream price flag; 'ticker' is the dark Bloomberg-style live-
-// rates ticker with the marquee of competitor prices.
-export const TOGGLE_DESIGNS = [
-  { value: 'default', label: 'Default (wax seal)' },
-  { value: 'ticker',  label: 'Ticker (live rates)' },
+// Whole-widget design. 'default' = wax-seal toggle + standard
+// floating panel. 'ticker' = full-width bottom rail with marquee
+// + dark panel that expands upward (Bloomberg terminal aesthetic).
+// Switching this changes both the closed and the open state.
+export const WIDGET_DESIGNS = [
+  { value: 'default', label: 'Default (wax seal + panel)' },
+  { value: 'ticker',  label: 'Ticker (bottom rail + dark panel)' },
 ];
 
 // Auto-open modes
