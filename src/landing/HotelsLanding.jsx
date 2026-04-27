@@ -8,7 +8,7 @@ import styles from './HotelsLanding.module.css';
  * The list is fetched from GitHub via the admin backend. While loading,
  * we show a lightweight spinner. On error, we show an inline banner.
  */
-export default function HotelsLanding({ onOpen, onCreate, onDuplicate, onDelete }) {
+export default function HotelsLanding({ onOpen, onCreate, onDuplicate, onDelete, onOpenStats }) {
   const [hotels, setHotels] = useState([]);
   const [status, setStatus] = useState('loading'); // loading | ready | error
   const [error, setError] = useState('');
@@ -41,13 +41,24 @@ export default function HotelsLanding({ onOpen, onCreate, onDuplicate, onDelete 
               Manage widget configurations for your properties
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onCreate}
-            className={styles.primaryBtn}
-          >
-            + New configuration
-          </button>
+          <div className={styles.headerActions}>
+            {onOpenStats && (
+              <button
+                type="button"
+                onClick={onOpenStats}
+                className={styles.ghostBtn}
+              >
+                Stats
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onCreate}
+              className={styles.primaryBtn}
+            >
+              + New configuration
+            </button>
+          </div>
         </header>
 
         {status === 'loading' && (

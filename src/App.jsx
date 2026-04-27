@@ -2,6 +2,7 @@ import { useState } from 'react';
 import AuthScreen from './auth/AuthScreen.jsx';
 import HotelsLanding from './landing/HotelsLanding.jsx';
 import ConfirmDeleteDialog from './landing/ConfirmDeleteDialog.jsx';
+import GlobalStatsScreen from './stats/GlobalStatsScreen.jsx';
 import ConfigForm from './ConfigForm.jsx';
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
 }
 
 function AdminUI() {
+  // 'landing' | 'form' | 'global-stats'
   const [view, setView] = useState('landing');
   const [editingHotelId, setEditingHotelId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -58,6 +60,13 @@ function AdminUI() {
     setEditingHotelId(null);
     setView('landing');
   }
+  function handleOpenGlobalStats() {
+    setView('global-stats');
+  }
+
+  if (view === 'global-stats') {
+    return <GlobalStatsScreen onBack={handleBackToLanding} />;
+  }
 
   if (view === 'landing') {
     return (
@@ -68,6 +77,7 @@ function AdminUI() {
           onCreate={handleCreate}
           onDuplicate={handleDuplicate}
           onDelete={handleDelete}
+          onOpenStats={handleOpenGlobalStats}
         />
         {deleteTarget && (
           <ConfirmDeleteDialog
