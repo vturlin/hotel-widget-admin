@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { WIDGET_PREVIEW_URL } from './constants.js';
-import { buildConfig, buildPreviewUrl } from './utils.js';
+import { buildConfig, buildPreviewUrl, parseBookingEngineUrl } from './utils.js';
 import useUnpublishedDiff from './hooks/useUnpublishedDiff.js';
 import AdminLayout from './admin/AdminLayout.jsx';
 import PublishConfirmDialog from './admin/PublishConfirmDialog.jsx';
@@ -19,6 +19,8 @@ const DEFAULT_FORM = {
   apiHotelId: '',
   apiCompetitorId: '',
   channelsEnabled: [],
+  bookingEngineId: '',
+  useCustomReserveUrl: false,
   reserveUrl: '',
   currency: 'EUR',
   position: 'bottom-right',
@@ -69,6 +71,20 @@ export default function ConfigForm({ editingHotelId, onBack }) {
           return;
         }
         const c = data.config;
+        // Resolve booking-engine vs custom-URL mode. Prefer the explicit
+        // fields if the saved config carries them; otherwise migrate from a
+        // standalone reserveUrl by trying to extract a BE ID from it.
+        let bookingEngineId = c.bookingEngineId || '';
+        let useCustomReserveUrl = !!c.useCustomReserveUrl;
+        if (!bookingEngineId && !c.useCustomReserveUrl && c.reserveUrl) {
+          const parsed = parseBookingEngineUrl(c.reserveUrl);
+          if (parsed) {
+            bookingEngineId = parsed;
+            useCustomReserveUrl = false;
+          } else {
+            useCustomReserveUrl = true;
+          }
+        }
         const loaded = {
           hotelId: editingHotelId,
           hotelName: c.hotelName || '',
@@ -77,6 +93,8 @@ export default function ConfigForm({ editingHotelId, onBack }) {
           apiHotelId: c.apiHotelId ? String(c.apiHotelId) : '',
           apiCompetitorId: c.apiCompetitorId ? String(c.apiCompetitorId) : '',
           channelsEnabled: c.channelsEnabled || [],
+          bookingEngineId,
+          useCustomReserveUrl,
           reserveUrl: c.reserveUrl || '',
           currency: c.currency || 'EUR',
           position: c.position || 'bottom-right',

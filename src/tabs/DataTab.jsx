@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { API_CHANNELS } from '../constants.js';
-import { analyzeRatesResponse } from '../utils.js';
+import { analyzeRatesResponse, buildBookingEngineUrl } from '../utils.js';
 import PanelHeader from '../admin/PanelHeader.jsx';
 import GroupCard from '../admin/GroupCard.jsx';
 import Field from '../components/forms/Field.jsx';
 import TextInput from '../components/forms/TextInput.jsx';
 import Select from '../components/forms/Select.jsx';
 import Checkbox from '../components/forms/Checkbox.jsx';
+import Toggle from '../components/forms/Toggle.jsx';
 import styles from './DataTab.module.css';
 
 export default function DataTab({ form, updateField }) {
@@ -236,22 +237,54 @@ export default function DataTab({ form, updateField }) {
       </GroupCard>
 
       <GroupCard title="Booking link" last>
-        <Field
-          label="Reserve URL template"
-          hint={
-            <>
-              Placeholders:{' '}
-              <code className={styles.inlineCode}>{'{checkIn}'}</code>,{' '}
-              <code className={styles.inlineCode}>{'{checkOut}'}</code>.
-            </>
-          }
-        >
-          <TextInput
-            value={form.reserveUrl || ''}
-            onChange={(v) => updateField('reserveUrl', v)}
-            placeholder="https://book.hotel.com/?arrive={checkIn}&depart={checkOut}"
-          />
-        </Field>
+        {form.useCustomReserveUrl ? (
+          <Field
+            label="Reserve URL template"
+            hint={
+              <>
+                Placeholders:{' '}
+                <code className={styles.inlineCode}>{'{checkIn}'}</code>,{' '}
+                <code className={styles.inlineCode}>{'{checkOut}'}</code>.
+              </>
+            }
+          >
+            <TextInput
+              value={form.reserveUrl || ''}
+              onChange={(v) => updateField('reserveUrl', v)}
+              placeholder="https://book.hotel.com/?arrive={checkIn}&depart={checkOut}"
+            />
+          </Field>
+        ) : (
+          <Field
+            label="Booking Engine ID"
+            hint={
+              form.bookingEngineId ? (
+                <>
+                  Generated URL:{' '}
+                  <code className={styles.inlineCode}>
+                    {buildBookingEngineUrl(form.bookingEngineId)}
+                  </code>
+                </>
+              ) : (
+                "The hotel's d-edge Booking Engine ID. The widget builds the standard d-edge URL from it."
+              )
+            }
+          >
+            <TextInput
+              value={form.bookingEngineId || ''}
+              onChange={(v) => updateField('bookingEngineId', v)}
+              placeholder="e.g. 12345"
+              monospace
+            />
+          </Field>
+        )}
+
+        <Toggle
+          checked={!!form.useCustomReserveUrl}
+          onChange={(v) => updateField('useCustomReserveUrl', v)}
+          label="Use a custom URL"
+          hint="Off: standard d-edge booking engine. On: paste your own URL with {checkIn} / {checkOut} placeholders."
+        />
 
         <Field label="Currency">
           <Select

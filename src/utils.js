@@ -1,9 +1,41 @@
+// Standard d-edge booking engine URL template. {BE_ID} is the per-hotel
+// Booking Engine identifier; everything else is constant across the d-edge
+// estate served by this admin.
+const BE_URL_TEMPLATE =
+  'https://www.secure-hotel-booking.com/d-edge/be/{BE_ID}/6671/fr-FR/RoomSelection?arrivalDate={checkIn}&departureDate={checkOut}';
+
+const BE_URL_PATTERN =
+  /^https:\/\/www\.secure-hotel-booking\.com\/d-edge\/be\/([^/]+)\/6671\/fr-FR\/RoomSelection\?arrivalDate=\{checkIn\}&departureDate=\{checkOut\}$/;
+
+export function buildBookingEngineUrl(beId) {
+  const id = (beId || '').toString().trim();
+  if (!id) return '';
+  return BE_URL_TEMPLATE.replace('{BE_ID}', encodeURIComponent(id));
+}
+
+// Returns the BE ID if `url` is a standard d-edge booking-engine URL,
+// otherwise null. Used at load time to detect whether an existing config
+// can be edited via the BE ID field or needs the custom-URL escape hatch.
+export function parseBookingEngineUrl(url) {
+  if (!url) return null;
+  const m = String(url).match(BE_URL_PATTERN);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
 /**
  * Build the config JSON that gets published to GitHub. API-only: no more
  * CSV mode, no more room options, no more channel labels. Channels are
  * hardcoded in the widget (see API_CHANNELS in constants.js).
+ *
+ * `reserveUrl` is derived from `bookingEngineId` unless `useCustomReserveUrl`
+ * is true, in which case `form.reserveUrl` is shipped verbatim. Both source
+ * fields are also persisted so the admin can restore the right edit mode.
  */
 export function buildConfig(form) {
+  const reserveUrl = form.useCustomReserveUrl
+    ? (form.reserveUrl || '')
+    : buildBookingEngineUrl(form.bookingEngineId);
+
   return {
     hotelName: form.hotelName || '',
     hotelDomain: form.hotelDomain || '',
@@ -16,7 +48,9 @@ export function buildConfig(form) {
     channelsEnabled: Array.isArray(form.channelsEnabled)
       ? form.channelsEnabled.map(Number).filter((n) => Number.isInteger(n))
       : [17, 10, 9],
-    reserveUrl: form.reserveUrl || '',
+    reserveUrl,
+    bookingEngineId: form.bookingEngineId || '',
+    useCustomReserveUrl: !!form.useCustomReserveUrl,
     currency: form.currency || 'EUR',
     position: form.position || 'bottom-right',
     size: form.size || 'small',

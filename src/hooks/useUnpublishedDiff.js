@@ -8,6 +8,8 @@ const FIELD_LABELS = {
   apiHotelId: 'API Hotel ID',
   apiCompetitorId: 'Competitor ID',
   channelsEnabled: 'Channels',
+  bookingEngineId: 'Booking Engine ID',
+  useCustomReserveUrl: 'Custom URL mode',
   reserveUrl: 'Reserve URL',
   currency: 'Currency',
   position: 'Position on screen',
