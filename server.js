@@ -17,6 +17,12 @@
  *   GITHUB_OWNER      — e.g. "vturlin"
  *   GITHUB_REPO       — e.g. "best-price-widget"
  *   GITHUB_BRANCH     — e.g. "main" (default)
+ *
+ * Optional (Phase 1 tracker — see SETUP-TRACKER.md):
+ *   BQ_PROJECT_ID                   — GCP project that owns the dataset
+ *   BQ_DATASET                      — BigQuery dataset (default: hotel_widget)
+ *   BQ_TABLE                        — BigQuery table   (default: events)
+ *   GOOGLE_APPLICATION_CREDENTIALS  — path to GCP service-account JSON
  */
 
 import express from 'express';
@@ -25,6 +31,7 @@ import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import NodeCache from 'node-cache';
 import cors from 'cors';
+import { BigQuery } from '@google-cloud/bigquery';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -560,6 +567,107 @@ app.get('/api/rates-cache/stats', (req, res) => {
       };
     }),
   });
+});
+
+// ─── Tracker (Phase 1: 3 widget events) ─────────────────────────────
+// Public endpoint hit by the widget on hotels' production sites. The
+// widget posts here from any origin, so CORS is wide open. Body is
+// minimal: { uid, hotelId, event, payload?, clientTs? }. Server stamps
+// its own timestamp + IP hash + UA + page URL.
+//
+// Storage: BigQuery streaming insert. If GCP is not configured (env
+// vars missing), the endpoint logs to console and returns 204 — useful
+// for local dev so you can wire the widget without GCP.
+//
+// See SETUP-TRACKER.md for BigQuery dataset/table setup.
+
+const BQ_PROJECT = process.env.BQ_PROJECT_ID;
+const BQ_DATASET = process.env.BQ_DATASET || 'hotel_widget';
+const BQ_TABLE = process.env.BQ_TABLE || 'events';
+const TRACKER_KNOWN_EVENTS = new Set([
+  'widget_loaded',
+  'widget_opened',
+  'book_clicked',
+  'sale', // future, accepted now so phase 3 doesn't need a server change
+]);
+
+let bqClient = null;
+if (BQ_PROJECT && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  try {
+    bqClient = new BigQuery({ projectId: BQ_PROJECT });
+    console.info(`[tracker] BigQuery client ready (${BQ_PROJECT}.${BQ_DATASET}.${BQ_TABLE})`);
+  } catch (err) {
+    console.error('[tracker] BigQuery init failed; events will only be logged', err);
+    bqClient = null;
+  }
+} else {
+  console.warn(
+    '[tracker] BQ_PROJECT_ID and/or GOOGLE_APPLICATION_CREDENTIALS not set — events will be logged to stdout only'
+  );
+}
+
+function hashIp(ip) {
+  if (!ip) return null;
+  return crypto.createHash('sha256').update(String(ip)).digest('hex').slice(0, 32);
+}
+
+const trackerCors = cors({
+  origin: true, // reflect any origin (the widget runs on every hotel's domain)
+  methods: ['POST', 'OPTIONS'],
+  maxAge: 86400,
+});
+
+app.use('/api/track', trackerCors);
+
+app.post('/api/track', async (req, res) => {
+  const { uid, hotelId, event, payload, clientTs } = req.body || {};
+
+  // Validation: cheap rejects before any work
+  if (typeof uid !== 'string' || uid.length < 8 || uid.length > 64) {
+    return res.status(400).json({ error: 'invalid uid' });
+  }
+  if (typeof hotelId !== 'string' || !hotelId || hotelId.length > 128) {
+    return res.status(400).json({ error: 'invalid hotelId' });
+  }
+  if (typeof event !== 'string' || !TRACKER_KNOWN_EVENTS.has(event)) {
+    return res.status(400).json({ error: 'invalid event' });
+  }
+
+  const row = {
+    uid,
+    hotel_id: hotelId,
+    event,
+    ts: new Date().toISOString(),
+    client_ts: typeof clientTs === 'number' ? new Date(clientTs).toISOString() : null,
+    user_agent: (req.headers['user-agent'] || '').slice(0, 512) || null,
+    page_url: typeof payload?.pageUrl === 'string' ? payload.pageUrl.slice(0, 1024) : null,
+    referrer: typeof payload?.referrer === 'string' ? payload.referrer.slice(0, 1024) : null,
+    payload: payload && typeof payload === 'object'
+      ? JSON.stringify(payload).slice(0, 4096)
+      : null,
+    ip_hash: hashIp(
+      req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
+        req.socket?.remoteAddress
+    ),
+  };
+
+  // Always log so it's visible in Cloud Run logs even if BQ is down
+  console.info('[tracker]', event, { uid, hotelId });
+
+  if (!bqClient) {
+    return res.status(204).send();
+  }
+
+  try {
+    await bqClient.dataset(BQ_DATASET).table(BQ_TABLE).insert([row]);
+    return res.status(204).send();
+  } catch (err) {
+    // BigQuery insert errors are noisy (PartialFailureError carries per-row
+    // detail). Log it but don't bubble to the widget — the user shouldn't
+    // see retries on their site for our reporting issues.
+    console.error('[tracker] BigQuery insert failed', err.errors || err);
+    return res.status(204).send();
+  }
 });
 
 // ─── Static frontend (production) ───────────────────────────────────
