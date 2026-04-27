@@ -34,6 +34,8 @@ export const TRACKED_EVENTS = [
 export const POSITIONS = [
   { value: 'bottom-right', label: 'Bottom right' },
   { value: 'bottom-left',  label: 'Bottom left' },
+  { value: 'center-right', label: 'Middle right' },
+  { value: 'center-left',  label: 'Middle left' },
   { value: 'top-right',    label: 'Top right' },
   { value: 'top-left',     label: 'Top left' },
 ];
