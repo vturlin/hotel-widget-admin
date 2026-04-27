@@ -621,6 +621,12 @@ const trackerCors = cors({
   origin: true, // reflect any origin (the widget runs on every hotel's domain)
   methods: ['POST', 'OPTIONS'],
   maxAge: 86400,
+  // navigator.sendBeacon (used by the widget under page-unload conditions)
+  // always sends with credentials mode = 'include'. The browser then refuses
+  // the request unless the response carries Access-Control-Allow-Credentials:
+  // true. Our endpoint doesn't actually read any cookie — accepting
+  // credentials here is purely to keep the preflight happy.
+  credentials: true,
 });
 
 app.use('/api/track', trackerCors);
