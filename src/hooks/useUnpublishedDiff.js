@@ -13,6 +13,7 @@ const FIELD_LABELS = {
   currency: 'Currency',
   position: 'Position on screen',
   size: 'Widget size',
+  toggleDesign: 'Toggle design',
   brandColor: 'Brand color',
   toggleColor: 'Toggle color',
   backgroundColor: 'Background color',

@@ -1,6 +1,7 @@
 import {
   POSITIONS,
   SIZES,
+  TOGGLE_DESIGNS,
   AUTO_OPEN_MODES,
   AUTO_OPEN_DELAYS,
   SCROLL_THRESHOLDS,
@@ -53,6 +54,19 @@ export default function AppearanceTab({
             );
           })}
         </div>
+      </GroupCard>
+
+      <GroupCard
+        title="Toggle design"
+        hint="The visual treatment of the closed-state pill."
+      >
+        <Field label="Design">
+          <Select
+            value={form.toggleDesign || 'default'}
+            onChange={(v) => updateField('toggleDesign', v)}
+            options={TOGGLE_DESIGNS}
+          />
+        </Field>
       </GroupCard>
 
       <GroupCard

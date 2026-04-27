@@ -53,6 +53,7 @@ export function buildConfig(form) {
     currency: form.currency || 'EUR',
     position: form.position || 'bottom-right',
     size: form.size || 'small',
+    toggleDesign: form.toggleDesign === 'ticker' ? 'ticker' : 'default',
     brandColor: form.brandColor || '#1a1a1a',
     // Optional override for the closed-state wax-seal toggle.
     // Empty string lets the widget fall back to brandColor.

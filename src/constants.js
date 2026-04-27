@@ -47,6 +47,14 @@ export const SIZES = [
   { value: 'large',  label: 'Large' },
 ];
 
+// Closed-state toggle design. 'default' is the original wax-seal
+// + cream price flag; 'ticker' is the dark Bloomberg-style live-
+// rates ticker with the marquee of competitor prices.
+export const TOGGLE_DESIGNS = [
+  { value: 'default', label: 'Default (wax seal)' },
+  { value: 'ticker',  label: 'Ticker (live rates)' },
+];
+
 // Auto-open modes
 export const AUTO_OPEN_MODES = [
   { value: 'disabled',       label: 'Disabled' },
