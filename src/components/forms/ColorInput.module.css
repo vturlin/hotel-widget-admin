@@ -1,0 +1,58 @@
+.wrap {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-bg-surface);
+}
+
+.swatch {
+  width: 56px;
+  position: relative;
+  cursor: pointer;
+  border-right: 1px solid var(--color-border);
+}
+
+.swatchPicker {
+  opacity: 0;
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+
+.hex {
+  flex: 1;
+  height: 38px;
+  padding: 0 12px;
+  border: none;
+  outline: none;
+  background: var(--color-bg-surface);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  min-width: 0;
+}
+
+.presets {
+  display: flex;
+  gap: 6px;
+  margin-top: var(--space-2);
+}
+
+.preset {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  padding: 0;
+}
+
+.preset.active {
+  border: 2px solid var(--color-brand-primary);
+}
