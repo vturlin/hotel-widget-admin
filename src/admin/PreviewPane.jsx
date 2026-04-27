@@ -20,11 +20,14 @@ export default function PreviewPane({
     const el = wrapRef.current;
     const measure = () => {
       const rect = el.getBoundingClientRect();
-      // Reserve room for: 24px*2 wrap padding + 16px gap + ~40px device toggle
-      // (horizontal: 24px*2 padding only).
+      // Reserve room for everything that wraps the actual viewport:
+      //   horizontal: 24px*2 wrap padding + 2px card border = 50
+      //   vertical:   24px*2 wrap padding + 16px gap + ~40px device toggle
+      //               + 36px BrowserChrome bar + 2px card border = 142
+      // Bumped slightly for safety.
       setAvailable({
-        w: Math.max(320, rect.width - 48),
-        h: Math.max(400, rect.height - 104),
+        w: Math.max(320, rect.width - 56),
+        h: Math.max(400, rect.height - 150),
       });
     };
     measure();
