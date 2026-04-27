@@ -84,7 +84,6 @@ export default function PreviewPane({
                 objectFit: 'cover',
                 background: '#fff',
               }}
-              referrerPolicy="no-referrer"
             />
           ) : (
             <div className={styles.demoBackdrop} />
