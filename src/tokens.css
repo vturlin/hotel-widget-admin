@@ -1,0 +1,124 @@
+@font-face {
+  font-family: "Open Sans";
+  src: url("./assets/fonts/OpenSans-VariableFont_wdth_wght.ttf") format("truetype-variations"),
+       url("./assets/fonts/OpenSans-VariableFont_wdth_wght.ttf") format("truetype");
+  font-weight: 300 800;
+  font-stretch: 75% 125%;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Open Sans";
+  src: url("./assets/fonts/OpenSans-Italic-VariableFont_wdth_wght.ttf") format("truetype-variations"),
+       url("./assets/fonts/OpenSans-Italic-VariableFont_wdth_wght.ttf") format("truetype");
+  font-weight: 300 800;
+  font-stretch: 75% 125%;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  /* ---------- COLOUR: brand ---------- */
+  --color-brand-primary:     #432975;
+  --color-brand-secondary:   #7E65AE;
+  --color-brand-light:       #ECE2FF;
+  --color-brand-text-light:  #8764C9;
+
+  /* ---------- COLOUR: neutrals ---------- */
+  --color-bg-page:           #FBFAF9;
+  --color-bg-surface:        #FFFFFF;
+  --color-bg-nav-active:     #F7F7F7;
+  --color-border:            #E7E5E4;
+
+  --color-text-primary:      #424242;
+  --color-text-secondary:    #666666;
+  --color-text-tertiary:     #999999;
+  --color-text-on-dark:      #FFFFFF;
+
+  --color-tooltip-bg:        #222222;
+
+  /* ---------- COLOUR: state ---------- */
+  --color-success:           #10B981;
+  --color-success-bg:        #ECFDF5;
+  --color-success-border:    #BBF7D0;
+  --color-success-text:      #1F5135;
+  --color-warning:           #F59E0B;
+  --color-error:             #EF4444;
+  --color-error-bg:          #FEF2F2;
+  --color-error-border:      #FECACA;
+  --color-error-text:        #991B1B;
+
+  /* ---------- TYPE ---------- */
+  --font-family:             "Open Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-family-mono:        "SF Mono", Menlo, Consolas, monospace;
+
+  --font-size-xs:            10px;
+  --font-size-sm:            12px;
+  --font-size-base:          13px;
+  --font-size-md:            14px;
+  --font-size-lg:            15px;
+  --font-size-xl:            20px;
+
+  --font-weight-regular:     400;
+  --font-weight-medium:      500;
+  --font-weight-semibold:    600;
+  --font-weight-bold:        700;
+
+  --line-height-h1:          30px;
+
+  /* ---------- RADIUS ---------- */
+  --radius-none:             0px;
+  --radius-xs:               2px;
+  --radius-sm:               4px;
+  --radius-md:               6px;
+  --radius-lg:               12px;
+  --radius-full:             9999px;
+
+  /* ---------- SHADOW ---------- */
+  --shadow-none:             none;
+  --shadow-card:             0 4px 8px rgba(51,51,51,0.10), 0 0 1px rgba(51,51,51,0.30);
+  --shadow-segmented:        0 2px 6px rgba(0,0,0,0.04);
+  --shadow-modal:            0 12px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
+
+  /* ---------- SPACING ---------- */
+  --space-1:                 4px;
+  --space-2:                 8px;
+  --space-3:                 12px;
+  --space-4:                 16px;
+  --space-6:                 24px;
+}
+
+/* ===== Global resets ===== */
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+html, body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  color: var(--color-text-primary);
+  background: var(--color-bg-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+button { cursor: pointer; border: none; background: none; padding: 0; }
+
+code {
+  font-family: var(--font-family-mono);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
