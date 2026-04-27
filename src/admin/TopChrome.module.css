@@ -1,0 +1,94 @@
+.bar {
+  height: 56px;
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-6);
+  gap: var(--space-4);
+  flex-shrink: 0;
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border);
+  margin-left: var(--space-2);
+}
+
+.crumb {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 120ms;
+}
+.crumb:hover { color: var(--color-text-primary); }
+
+.sep {
+  color: #C9C5C2;
+}
+
+.title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.badge {
+  margin-left: var(--space-1);
+  padding: 2px 8px;
+  background: var(--color-brand-light);
+  color: var(--color-brand-text-light);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  border-radius: var(--radius-xs);
+  text-transform: uppercase;
+  font-family: var(--font-family);
+}
+
+.right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.outlineBtn {
+  background: transparent;
+  border: 1px solid var(--color-brand-primary);
+  color: var(--color-brand-primary);
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  transition: background 120ms;
+}
+.outlineBtn:hover:not(:disabled) {
+  background: rgba(67, 41, 117, 0.06);
+}
+.outlineBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primaryBtn {
+  background: var(--color-brand-primary);
+  border: none;
+  color: var(--color-text-on-dark);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  transition: background 120ms;
+}
+.primaryBtn:hover:not(:disabled) {
+  background: #372062;
+}
+.primaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
