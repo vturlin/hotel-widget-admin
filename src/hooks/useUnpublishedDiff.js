@@ -14,6 +14,7 @@ const FIELD_LABELS = {
   position: 'Position on screen',
   size: 'Widget size',
   brandColor: 'Brand color',
+  toggleColor: 'Toggle color',
   backgroundColor: 'Background color',
   enabledLocales: 'Enabled languages',
   defaultLocale: 'Default language',

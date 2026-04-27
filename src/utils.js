@@ -54,6 +54,9 @@ export function buildConfig(form) {
     position: form.position || 'bottom-right',
     size: form.size || 'small',
     brandColor: form.brandColor || '#1a1a1a',
+    // Optional override for the closed-state wax-seal toggle.
+    // Empty string lets the widget fall back to brandColor.
+    toggleColor: (form.toggleColor || '').trim() || '',
     backgroundColor: form.backgroundColor || '#faf7f2',
     enabledLocales: form.enabledLocales || ['en'],
     defaultLocale: form.defaultLocale || 'en',

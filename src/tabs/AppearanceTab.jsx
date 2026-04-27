@@ -10,6 +10,7 @@ import GroupCard from '../admin/GroupCard.jsx';
 import Field from '../components/forms/Field.jsx';
 import Select from '../components/forms/Select.jsx';
 import ColorInput from '../components/forms/ColorInput.jsx';
+import Toggle from '../components/forms/Toggle.jsx';
 import styles from './AppearanceTab.module.css';
 
 const BRAND_PRESETS = ['#8B5A3C', '#1F5135', '#3E2D5A', '#B43A2A', '#1A1A1A'];
@@ -65,6 +66,28 @@ export default function AppearanceTab({
             presets={BRAND_PRESETS}
           />
         </Field>
+
+        <Toggle
+          checked={!!form.toggleColor}
+          onChange={(v) =>
+            updateField(
+              'toggleColor',
+              v ? form.toggleColor || form.brandColor || '#8B5A3C' : ''
+            )
+          }
+          label="Use a custom toggle color"
+          hint="When off, the wax-seal toggle reuses the Brand color above."
+        />
+        {form.toggleColor && (
+          <Field label="Toggle color" hint="Drives the wax-seal medallion's gradient. The rest of the widget keeps using Brand color.">
+            <ColorInput
+              value={form.toggleColor}
+              onChange={(v) => updateField('toggleColor', v)}
+              presets={BRAND_PRESETS}
+            />
+          </Field>
+        )}
+
         <Field label="Background" hint="Widget panel fill.">
           <ColorInput
             value={form.backgroundColor}
