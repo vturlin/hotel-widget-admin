@@ -590,12 +590,11 @@ app.get('/api/rates-cache/stats', (req, res) => {
 const BQ_PROJECT = process.env.BQ_PROJECT_ID;
 const BQ_DATASET = process.env.BQ_DATASET || 'hotel_widget';
 const BQ_TABLE = process.env.BQ_TABLE || 'events';
-const TRACKER_KNOWN_EVENTS = new Set([
-  'widget_loaded',
-  'widget_opened',
-  'book_clicked',
-  'sale', // future, accepted now so phase 3 doesn't need a server change
-]);
+// Event names follow snake_case [a-z0-9_], 1-64 chars, must start with a
+// letter. Permissive enough for any custom event you want to push from
+// the host page (e.g. sale, refund, cancellation, search_submitted), but
+// strict enough that BigQuery won't see weird strings as event names.
+const TRACKER_EVENT_NAME_RE = /^[a-z][a-z0-9_]{0,63}$/;
 
 let bqClient = null;
 if (BQ_PROJECT) {
@@ -695,7 +694,8 @@ app.use('/api/track', trackerCors);
 app.use('/api/track', trackerLimiter);
 
 app.post('/api/track', async (req, res) => {
-  const { uid, hotelId, event, payload, clientTs } = req.body || {};
+  const { uid, hotelId, event, payload, clientTs, bookingId, price, currency } =
+    req.body || {};
 
   // Validation: cheap rejects before any work
   if (typeof uid !== 'string' || uid.length < 8 || uid.length > 64) {
@@ -704,7 +704,7 @@ app.post('/api/track', async (req, res) => {
   if (typeof hotelId !== 'string' || !hotelId || hotelId.length > 128) {
     return res.status(400).json({ error: 'invalid hotelId' });
   }
-  if (typeof event !== 'string' || !TRACKER_KNOWN_EVENTS.has(event)) {
+  if (typeof event !== 'string' || !TRACKER_EVENT_NAME_RE.test(event)) {
     return res.status(400).json({ error: 'invalid event' });
   }
 
@@ -733,6 +733,20 @@ app.post('/api/track', async (req, res) => {
         req.socket?.remoteAddress
     ),
   };
+
+  // Optional structured booking metadata. Only attached when the caller
+  // actually provides them, so plain widget events still insert into a
+  // schema that doesn't yet have these columns. Run the ALTER described
+  // in SETUP-TRACKER.md before sending sale/refund-style events.
+  if (typeof bookingId === 'string' && bookingId) {
+    row.booking_id = bookingId.slice(0, 128);
+  }
+  if (typeof price === 'number' && Number.isFinite(price)) {
+    row.price = price;
+  }
+  if (typeof currency === 'string' && /^[A-Z]{3}$/.test(currency)) {
+    row.currency = currency;
+  }
 
   // Always log so it's visible in Cloud Run logs even if BQ is down
   console.info('[tracker]', event, { uid, hotelId });

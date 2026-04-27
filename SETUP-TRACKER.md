@@ -173,11 +173,87 @@ If steps 4–5 work but no rows appear in BQ, check the admin server
 logs for `[tracker] BigQuery insert failed` — almost always missing
 permissions on the service account or wrong dataset/table name.
 
-## What's coming in later phases
+## Custom events with booking metadata (sale, refund, …)
 
-- **Phase 2**: Stats UI tab in the admin (counts per event, per hotel,
-  per period — funnel from load → open → click).
-- **Phase 3**: Sale tracking. The widget will append `&hpw_uid={uid}`
-  to the d-edge Book URL; a snippet you paste on the d-edge
-  confirmation page will POST to `/api/track/sale` with the uid +
-  amount, closing the attribution loop.
+The same `/api/track` endpoint also accepts arbitrary custom events
+plus optional structured booking fields. Useful for attribution from
+the booking-engine's confirmation page.
+
+### 1. Extend the BigQuery schema (one-off)
+
+In the BigQuery console, run on your `hotel_widget.events` table:
+
+```sql
+ALTER TABLE `<your-project>.hotel_widget.events`
+  ADD COLUMN booking_id STRING,
+  ADD COLUMN price NUMERIC,
+  ADD COLUMN currency STRING;
+```
+
+These columns are nullable. Existing widget events (load / open /
+book) keep working untouched — they only get filled in when an event
+ships them.
+
+### 2. Append `hpw_uid` to the Book URL
+
+Already done by the widget when `trackerEnabled: true` and consent is
+granted. The Book button decorates the reserve URL with
+`&hpw_uid=<cookie>&hpw_hotel=<hotelId>` so the booking flow carries
+the attribution forward.
+
+### 3. Snippet for the confirmation page
+
+Paste this on the d-edge confirmation page (or any page in the
+booking flow that's sure to load only after a successful sale).
+Replace the three `__YOUR_..._HERE__` placeholders with whatever your
+page exposes — usually you read them from a global, a meta tag, or a
+DOM selector.
+
+```html
+<script>
+(function () {
+  var p = new URLSearchParams(location.search);
+  var uid = p.get('hpw_uid');
+  var hotelId = p.get('hpw_hotel');
+  if (!uid || !hotelId) return; // visitor didn't come through the widget
+
+  // ↓↓↓  YOU configure these for your confirmation page  ↓↓↓
+  var bookingId = '__YOUR_BOOKING_ID_HERE__';     // e.g. document.querySelector('.booking-ref').textContent.trim()
+  var price     = parseFloat('__YOUR_PRICE_HERE__'); // e.g. parseFloat(document.querySelector('.total').dataset.amount)
+  var currency  = '__YOUR_CURRENCY_HERE__';       // e.g. 'EUR'  (3-letter ISO uppercase)
+
+  var body = JSON.stringify({
+    uid: uid,
+    hotelId: hotelId,
+    event: 'sale',                  // any [a-z][a-z0-9_]{0,63} works
+    bookingId: bookingId,
+    price: price,
+    currency: currency,
+  });
+
+  var url = 'https://hotel-widget-admin-152048178748.europe-west1.run.app/api/track';
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }));
+  } else {
+    fetch(url, { method: 'POST', keepalive: true,
+      headers: { 'Content-Type': 'application/json' }, body: body })
+      .catch(function () {});
+  }
+})();
+</script>
+```
+
+### 4. Verify
+
+In BigQuery, after a real (or simulated) booking:
+
+```sql
+SELECT event, booking_id, price, currency, ts
+FROM `<your-project>.hotel_widget.events`
+WHERE event = 'sale'
+ORDER BY ts DESC
+LIMIT 10;
+```
+
+Same row will also appear in the per-hotel and global Stats tabs as a
+fourth funnel step.
