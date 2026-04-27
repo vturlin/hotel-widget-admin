@@ -676,6 +676,143 @@ app.post('/api/track', async (req, res) => {
   }
 });
 
+// ─── Stats (Phase 2) ─────────────────────────────────────────────────
+// BigQuery aggregation read by the admin's Stats tab. Two scopes:
+//   GET /api/stats/:hotelId   — single-hotel breakdown
+//   GET /api/stats            — across all hotels
+//
+// Query string: ?from=YYYY-MM-DD&to=YYYY-MM-DD (defaults: last 30 days,
+// today exclusive). Range capped at 365 days. Returns:
+//   { from, to, hotelId, totals: { event: { count, uniqueUsers } },
+//     series: [{ day, events: { event: count } }] }
+//
+// Cached in-memory for 5 minutes per (scope, range) tuple to keep BQ
+// scan costs sane when the user toggles dates.
+
+const statsCache = new NodeCache({ stdTTL: 300, checkperiod: 60, useClones: false });
+
+function todayUtcStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function daysAgoUtcStr(n) {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+function buildStatsParams(req) {
+  const from = (req.query.from || daysAgoUtcStr(30)).slice(0, 10);
+  // `to` is exclusive, default = tomorrow so today's events are included.
+  const to = (req.query.to || daysAgoUtcStr(-1)).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+    return { error: 'invalid date format, expected YYYY-MM-DD' };
+  }
+  const days = Math.floor((Date.parse(to) - Date.parse(from)) / 86400000);
+  if (Number.isNaN(days) || days <= 0) {
+    return { error: '`to` must be after `from`' };
+  }
+  if (days > 365) return { error: 'range too large (max 365 days)' };
+  return { from, to };
+}
+
+function denseSeries(rows, from, to) {
+  // Roll BQ rows ([{ day, event, n }]) into [{ day, events: { name: n } }]
+  // with a row for every day in the range, even days with zero events.
+  const byDay = new Map();
+  for (const r of rows) {
+    const day = r.day?.value || r.day;
+    if (!byDay.has(day)) byDay.set(day, {});
+    byDay.get(day)[r.event] = Number(r.n || 0);
+  }
+  const out = [];
+  const start = new Date(`${from}T00:00:00Z`);
+  const end = new Date(`${to}T00:00:00Z`);
+  for (let d = new Date(start); d < end; d.setUTCDate(d.getUTCDate() + 1)) {
+    const dayStr = d.toISOString().slice(0, 10);
+    out.push({ day: dayStr, events: byDay.get(dayStr) || {} });
+  }
+  return out;
+}
+
+async function statsHandler(req, res, hotelId) {
+  if (!bqClient) {
+    return res.status(503).json({ error: 'BigQuery not configured on this server' });
+  }
+
+  const range = buildStatsParams(req);
+  if (range.error) return res.status(400).json({ error: range.error });
+  const { from, to } = range;
+
+  const cacheKey = `stats:${hotelId || '*'}:${from}:${to}`;
+  const cached = statsCache.get(cacheKey);
+  if (cached) {
+    res.setHeader('X-Cache', 'HIT');
+    return res.json(cached);
+  }
+
+  try {
+    const tableRef = `\`${BQ_PROJECT}.${BQ_DATASET}.${BQ_TABLE}\``;
+    const where = hotelId
+      ? 'ts >= @from AND ts < @to AND hotel_id = @hotelId'
+      : 'ts >= @from AND ts < @to';
+    const params = hotelId
+      ? { from: `${from} 00:00:00`, to: `${to} 00:00:00`, hotelId }
+      : { from: `${from} 00:00:00`, to: `${to} 00:00:00` };
+    const types = hotelId
+      ? { from: 'TIMESTAMP', to: 'TIMESTAMP', hotelId: 'STRING' }
+      : { from: 'TIMESTAMP', to: 'TIMESTAMP' };
+
+    const [[seriesRows], [totalsRows]] = await Promise.all([
+      bqClient.query({
+        query: `SELECT DATE(ts) AS day, event, COUNT(*) AS n
+                FROM ${tableRef}
+                WHERE ${where}
+                GROUP BY day, event
+                ORDER BY day`,
+        params,
+        types,
+      }),
+      bqClient.query({
+        query: `SELECT event, COUNT(*) AS n, COUNT(DISTINCT uid) AS unique_users
+                FROM ${tableRef}
+                WHERE ${where}
+                GROUP BY event`,
+        params,
+        types,
+      }),
+    ]);
+
+    const totals = {};
+    for (const r of totalsRows) {
+      totals[r.event] = {
+        count: Number(r.n || 0),
+        uniqueUsers: Number(r.unique_users || 0),
+      };
+    }
+
+    const result = {
+      hotelId: hotelId || null,
+      from,
+      to,
+      totals,
+      series: denseSeries(seriesRows, from, to),
+    };
+
+    statsCache.set(cacheKey, result);
+    res.setHeader('X-Cache', 'MISS');
+    return res.json(result);
+  } catch (err) {
+    console.error('[api/stats]', err.errors || err);
+    return res.status(500).json({ error: err.message || 'BigQuery query failed' });
+  }
+}
+
+app.get('/api/stats', (req, res) => statsHandler(req, res, null));
+app.get('/api/stats/:hotelId', (req, res) =>
+  statsHandler(req, res, decodeURIComponent(req.params.hotelId))
+);
+
 // ─── Static frontend (production) ───────────────────────────────────
 // After `npm run build`, Vite produces ./dist. We serve it from here.
 // In dev, you'd run `vite` separately — this block isn't hit.
