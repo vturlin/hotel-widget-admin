@@ -40,13 +40,9 @@ function humanize(key) {
 
 export default function useUnpublishedDiff(form, snapshot) {
   return useMemo(() => {
-    if (!snapshot) {
-      const dirty = Boolean(form?.hotelId);
-      return {
-        isDirty: dirty,
-        changedFields: dirty ? ['Hotel ID'] : [],
-      };
-    }
+    // No baseline yet (e.g. edit mode pre-load) — nothing to diff against.
+    if (!snapshot) return { isDirty: false, changedFields: [] };
+
     const changed = [];
     for (const key of Object.keys(form)) {
       if (!shallowEqual(form[key], snapshot[key])) {

@@ -91,6 +91,7 @@ export default function DataTab({ form, updateField }) {
             value={form.apiHotelId || ''}
             onChange={(v) => updateField('apiHotelId', v)}
             placeholder="e.g. 20917"
+            inputMode="numeric"
             monospace
           />
         </Field>
@@ -107,6 +108,7 @@ export default function DataTab({ form, updateField }) {
             value={form.apiCompetitorId || ''}
             onChange={(v) => updateField('apiCompetitorId', v)}
             placeholder="Auto-detected when you test the connection"
+            inputMode="numeric"
             monospace
           />
         </Field>

@@ -8,6 +8,7 @@ export default function TextInput({
   monospace = false,
   prefix,
   type = 'text',
+  inputMode,
 }) {
   const wrapClass = [styles.wrap, disabled && styles.disabled]
     .filter(Boolean)
@@ -23,6 +24,7 @@ export default function TextInput({
       {prefix && <span className={styles.prefix}>{prefix}</span>}
       <input
         type={type}
+        inputMode={inputMode}
         className={inputClass}
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}

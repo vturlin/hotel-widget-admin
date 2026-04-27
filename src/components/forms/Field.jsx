@@ -1,14 +1,17 @@
 import styles from './Field.module.css';
 
-export default function Field({ label, hint, htmlFor, optional, children }) {
+// Renders as a <div>, not <label>, so it can wrap controls (like ColorInput,
+// Toggle, Checkbox) that already contain their own <label>/<button>. Nested
+// <label> elements are invalid HTML and trigger a React warning.
+export default function Field({ label, hint, optional, children }) {
   return (
-    <label htmlFor={htmlFor} className={styles.field}>
-      <span className={styles.label}>
+    <div className={styles.field}>
+      <div className={styles.label}>
         {label}
         {optional && <span className={styles.optional}>optional</span>}
-      </span>
+      </div>
       {children}
       {hint && <div className={styles.hint}>{hint}</div>}
-    </label>
+    </div>
   );
 }

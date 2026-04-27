@@ -42,7 +42,10 @@ export default function ConfigForm({ editingHotelId, onBack }) {
     hotelId: editingHotelId || '',
   });
 
-  const lastSnapshotRef = useRef(null);
+  // In create mode, the snapshot starts as DEFAULT_FORM so the unpublished-pill
+  // counts only fields the user actively changed. In edit mode, it stays null
+  // until the API load resolves; the hook treats null as "no baseline yet".
+  const lastSnapshotRef = useRef(isEditMode ? null : DEFAULT_FORM);
 
   const [device, setDevice] = useState('desktop');
   const [activeTab, setActiveTab] = useState('identity');
