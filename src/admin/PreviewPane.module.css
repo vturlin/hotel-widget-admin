@@ -1,6 +1,8 @@
 .wrap {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: var(--space-4);
   width: 100%;
   height: 100%;
@@ -8,14 +10,8 @@
   min-height: 0;
 }
 
-.frame {
-  flex: 1;
-  min-height: 0;
-}
-
 .toggleRow {
-  display: flex;
-  justify-content: center;
+  flex-shrink: 0;
 }
 
 .demoBackdrop {

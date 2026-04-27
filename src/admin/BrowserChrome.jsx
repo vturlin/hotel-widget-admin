@@ -1,8 +1,8 @@
 import styles from './BrowserChrome.module.css';
 
-export default function BrowserChrome({ url, children }) {
+export default function BrowserChrome({ url, width, children }) {
   return (
-    <div className={styles.card}>
+    <div className={styles.card} style={width ? { width } : undefined}>
       <div className={styles.bar}>
         <span className={styles.dot} style={{ background: '#FF5F57' }} />
         <span className={styles.dot} style={{ background: '#FEBC2E' }} />

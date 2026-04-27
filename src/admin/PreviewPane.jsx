@@ -20,9 +20,11 @@ export default function PreviewPane({
     const el = wrapRef.current;
     const measure = () => {
       const rect = el.getBoundingClientRect();
+      // Reserve room for: 24px*2 wrap padding + 16px gap + ~40px device toggle
+      // (horizontal: 24px*2 padding only).
       setAvailable({
-        w: Math.max(320, rect.width - 40),
-        h: Math.max(400, rect.height - 80),
+        w: Math.max(320, rect.width - 48),
+        h: Math.max(400, rect.height - 104),
       });
     };
     measure();
@@ -61,49 +63,50 @@ export default function PreviewPane({
 
   return (
     <div ref={wrapRef} className={styles.wrap}>
-      <div className={styles.frame} style={{ width: '100%', height: '100%' }}>
-        <BrowserChrome url={useScreenshot ? clientUrl : 'demo.hotel-widget.app'}>
-          <div style={{ width: displayW, height: displayH, position: 'relative', margin: '0 auto' }}>
-            {useScreenshot ? (
-              <img
-                key={screenshotUrl}
-                src={screenshotUrl}
-                alt="Client website preview"
-                onError={() => setScreenshotFailed(true)}
-                style={{
-                  width: viewport.w,
-                  height: viewport.h,
-                  transform: `scale(${scale})`,
-                  transformOrigin: 'top left',
-                  position: 'absolute',
-                  inset: 0,
-                  objectFit: 'cover',
-                  background: '#fff',
-                }}
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div className={styles.demoBackdrop} />
-            )}
-            <iframe
-              key={previewUrl}
-              src={previewUrl}
-              title="Widget preview"
+      <BrowserChrome
+        url={useScreenshot ? clientUrl : 'demo.hotel-widget.app'}
+        width={displayW}
+      >
+        <div style={{ width: displayW, height: displayH, position: 'relative' }}>
+          {useScreenshot ? (
+            <img
+              key={screenshotUrl}
+              src={screenshotUrl}
+              alt="Client website preview"
+              onError={() => setScreenshotFailed(true)}
               style={{
                 width: viewport.w,
                 height: viewport.h,
                 transform: `scale(${scale})`,
                 transformOrigin: 'top left',
-                border: 0,
                 position: 'absolute',
                 inset: 0,
-                background: 'transparent',
+                objectFit: 'cover',
+                background: '#fff',
               }}
-              allowTransparency="true"
+              referrerPolicy="no-referrer"
             />
-          </div>
-        </BrowserChrome>
-      </div>
+          ) : (
+            <div className={styles.demoBackdrop} />
+          )}
+          <iframe
+            key={previewUrl}
+            src={previewUrl}
+            title="Widget preview"
+            style={{
+              width: viewport.w,
+              height: viewport.h,
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+              border: 0,
+              position: 'absolute',
+              inset: 0,
+              background: 'transparent',
+            }}
+            allowTransparency="true"
+          />
+        </div>
+      </BrowserChrome>
 
       <div className={styles.toggleRow}>
         <DeviceToggle device={device} onChange={setDevice} />
