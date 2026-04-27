@@ -1,0 +1,28 @@
+/* Segmented control for the "Preview state: Open / Closed" toggle.
+   Shares the visual treatment of admin/DeviceToggle but lives here so
+   AppearanceTab doesn't depend on a sibling tab's CSS module. */
+.segmented {
+  display: inline-flex;
+  padding: var(--space-1);
+  background: var(--color-bg-page);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  gap: 2px;
+}
+
+.segmentedBtn {
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+
+.segmentedBtn.active {
+  background: var(--color-brand-primary);
+  color: var(--color-text-on-dark);
+}

@@ -51,6 +51,9 @@ export default function ConfigForm({ editingHotelId, onBack }) {
   const lastSnapshotRef = useRef(isEditMode ? null : DEFAULT_FORM);
 
   const [device, setDevice] = useState('desktop');
+  // Admin-only preview tool: 'open' shows the expanded panel,
+  // 'closed' shows the wax-seal toggle. Not persisted to the config.
+  const [previewState, setPreviewState] = useState('open');
   const [activeTab, setActiveTab] = useState('identity');
   const [publishState, setPublishState] = useState({ status: 'idle' });
   const [copied, setCopied] = useState(false);
@@ -128,8 +131,8 @@ export default function ConfigForm({ editingHotelId, onBack }) {
 
   const config = useMemo(() => buildConfig(form), [form]);
   const previewUrl = useMemo(
-    () => buildPreviewUrl(WIDGET_PREVIEW_URL, config),
-    [config]
+    () => buildPreviewUrl(WIDGET_PREVIEW_URL, config, { previewState }),
+    [config, previewState]
   );
   const viewport =
     device === 'desktop' ? { w: 1280, h: 720 } : { w: 390, h: 844 };
@@ -285,7 +288,12 @@ export default function ConfigForm({ editingHotelId, onBack }) {
           <DataTab form={form} updateField={updateField} />
         )}
         {activeTab === 'appearance' && (
-          <AppearanceTab form={form} updateField={updateField} />
+          <AppearanceTab
+            form={form}
+            updateField={updateField}
+            previewState={previewState}
+            setPreviewState={setPreviewState}
+          />
         )}
         {activeTab === 'languages' && (
           <LanguagesTab

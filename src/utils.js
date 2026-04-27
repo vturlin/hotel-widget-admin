@@ -80,7 +80,7 @@ export function buildConfig(form) {
  * (never the real API). Otherwise publishing a broken config could leak
  * real prices from an unrelated hotel.
  */
-export function buildPreviewUrl(baseUrl, config) {
+export function buildPreviewUrl(baseUrl, config, opts = {}) {
   const previewConfig = { ...config, _preview: true };
   const json = JSON.stringify(previewConfig);
   const bytes = new TextEncoder().encode(json);
@@ -90,7 +90,16 @@ export function buildPreviewUrl(baseUrl, config) {
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/, '');
-  return `${baseUrl}?preview=${b64}`;
+  // Preview-only state lives outside the encoded config: it's an admin
+  // UI tool, not part of what gets published. The widget loader reads
+  // this query param and forces the corresponding initial state. Sent
+  // for both 'open' and 'closed' so the widget treats the toggle as
+  // the source of truth instead of falling back to autoOpenMode.
+  const stateParam =
+    opts.previewState === 'closed' || opts.previewState === 'open'
+      ? `&previewState=${opts.previewState}`
+      : '';
+  return `${baseUrl}?preview=${b64}${stateParam}`;
 }
 
 /**

@@ -10,17 +10,49 @@ import GroupCard from '../admin/GroupCard.jsx';
 import Field from '../components/forms/Field.jsx';
 import Select from '../components/forms/Select.jsx';
 import ColorInput from '../components/forms/ColorInput.jsx';
+import styles from './AppearanceTab.module.css';
 
 const BRAND_PRESETS = ['#8B5A3C', '#1F5135', '#3E2D5A', '#B43A2A', '#1A1A1A'];
 const BG_PRESETS = ['#FAF7F2', '#FFFFFF', '#F4EFE8', '#1A1A1A', '#F0E9DD'];
 
-export default function AppearanceTab({ form, updateField }) {
+export default function AppearanceTab({
+  form,
+  updateField,
+  previewState,
+  setPreviewState,
+}) {
   return (
     <>
       <PanelHeader
         title="Appearance"
         subtitle="Colors, position, and opening behaviour."
       />
+
+      <GroupCard
+        title="Preview state"
+        hint="Toggle between the closed wax-seal and the open panel. Affects this preview only — not the published config."
+      >
+        <div className={styles.segmented} role="radiogroup" aria-label="Preview state">
+          {[
+            { value: 'closed', label: 'Closed' },
+            { value: 'open', label: 'Open' },
+          ].map((opt) => {
+            const active = previewState === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => setPreviewState(opt.value)}
+                className={`${styles.segmentedBtn} ${active ? styles.active : ''}`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </GroupCard>
 
       <GroupCard
         title="Colors"
