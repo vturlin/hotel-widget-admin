@@ -201,47 +201,68 @@ granted. The Book button decorates the reserve URL with
 `&hpw_uid=<cookie>&hpw_hotel=<hotelId>` so the booking flow carries
 the attribution forward.
 
-### 3. Snippet for the confirmation page
+### 3. Fire the sale event via `window.HPW.track`
 
-Paste this on the d-edge confirmation page (or any page in the
-booking flow that's sure to load only after a successful sale).
-Replace the three `__YOUR_..._HERE__` placeholders with whatever your
-page exposes — usually you read them from a global, a meta tag, or a
-DOM selector.
+When the widget bundle is loaded on a page (which is the case on the
+hotel's own confirmation page after the booking-engine redirect), it
+exposes a global helper:
+
+```js
+window.HPW.track(eventName, data)
+```
+
+It reuses the widget's cookie, endpoint, and consent gate — you don't
+need to re-do any of that plumbing on the confirmation page. Pass any
+event name matching `[a-z][a-z0-9_]{0,63}`. Three keys in `data` get
+lifted into typed BigQuery columns; anything else stays in the JSON
+payload column.
+
+The recommended wiring is a GTM Custom HTML tag triggered on the
+existing `purchase` dataLayer push (or whatever event your booking
+flow pushes on confirmation):
 
 ```html
 <script>
-(function () {
-  var p = new URLSearchParams(location.search);
-  var uid = p.get('hpw_uid');
-  var hotelId = p.get('hpw_hotel');
-  if (!uid || !hotelId) return; // visitor didn't come through the widget
+  // Reads the same fields GA4 / GTM e-commerce already populates.
+  var ec = (window.dataLayer || [])
+    .slice().reverse()
+    .find(function (e) { return e && e.event === 'purchase' && e.ecommerce; })
+    ?.ecommerce;
 
-  // ↓↓↓  YOU configure these for your confirmation page  ↓↓↓
-  var bookingId = '__YOUR_BOOKING_ID_HERE__';     // e.g. document.querySelector('.booking-ref').textContent.trim()
-  var price     = parseFloat('__YOUR_PRICE_HERE__'); // e.g. parseFloat(document.querySelector('.total').dataset.amount)
-  var currency  = '__YOUR_CURRENCY_HERE__';       // e.g. 'EUR'  (3-letter ISO uppercase)
-
-  var body = JSON.stringify({
-    uid: uid,
-    hotelId: hotelId,
-    event: 'sale',                  // any [a-z][a-z0-9_]{0,63} works
-    bookingId: bookingId,
-    price: price,
-    currency: currency,
-  });
-
-  var url = 'https://hotel-widget-admin-152048178748.europe-west1.run.app/api/track';
-  if (navigator.sendBeacon) {
-    navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }));
-  } else {
-    fetch(url, { method: 'POST', keepalive: true,
-      headers: { 'Content-Type': 'application/json' }, body: body })
-      .catch(function () {});
+  if (window.HPW && ec) {
+    window.HPW.track('sale', {
+      bookingId: String(ec.transaction_id || ''),
+      price:     parseFloat(ec.value),
+      currency:  String(ec.currency || 'EUR').toUpperCase(),
+      // any extra context you want goes here — it lands in the
+      // payload JSON column
+      items: ec.items?.length || null,
+    });
   }
-})();
 </script>
 ```
+
+Or if you don't have a GTM purchase event yet, call it directly with
+values you read from the DOM:
+
+```html
+<script>
+  if (window.HPW) {
+    window.HPW.track('sale', {
+      bookingId: document.querySelector('[data-booking-ref]')?.textContent.trim(),
+      price:     parseFloat(document.querySelector('[data-total]')?.textContent),
+      currency:  'EUR',
+    });
+  }
+</script>
+```
+
+Same API for `refund`, `cancellation`, or any other custom event —
+just change the first argument.
+
+If `window.HPW` is undefined the call is a no-op (the widget hasn't
+loaded yet). Place the snippet AFTER the widget's `<script>` tag, or
+gate it behind the widget's load event.
 
 ### 4. Verify
 
