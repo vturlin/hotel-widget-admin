@@ -690,10 +690,15 @@ async function getValidHotelIds() {
   }
 }
 
-app.use('/api/track', trackerCors);
-app.use('/api/track', trackerLimiter);
+// Path is intentionally opaque ("/api/i") to slip past the generic
+// adblock rules that match */track*, */analytics*, */collect*.
+// Keep the /api/track route too so widget bundles still pointing at
+// the old path during a deploy gap don't fail; can be removed once
+// every deployed widget.js has been rebuilt.
+app.use(['/api/i', '/api/track'], trackerCors);
+app.use(['/api/i', '/api/track'], trackerLimiter);
 
-app.post('/api/track', async (req, res) => {
+async function trackHandler(req, res) {
   const { uid, hotelId, event, payload, clientTs, bookingId, price, currency } =
     req.body || {};
 
@@ -771,7 +776,10 @@ app.post('/api/track', async (req, res) => {
     console.error('[tracker] BigQuery insert failed', err.errors || err);
     return res.status(204).send();
   }
-});
+}
+
+app.post('/api/i', trackHandler);
+app.post('/api/track', trackHandler);
 
 // ─── Stats (Phase 2) ─────────────────────────────────────────────────
 // BigQuery aggregation read by the admin's Stats tab. Two scopes:

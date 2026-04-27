@@ -1,6 +1,8 @@
 # Tracker setup (Phase 1)
 
-The widget posts three events to the admin's `/api/track` endpoint:
+The widget posts three events to the admin's `/api/i` endpoint
+(intentionally opaque to evade adblockers — the older `/api/track`
+path is also accepted as an alias during transitions):
 `widget_loaded`, `widget_opened`, `book_clicked`. Events are inserted
 into a BigQuery table for later reporting (Phase 2 will add the UI).
 
@@ -128,7 +130,7 @@ hotel served by this admin), so it goes in a Vite env var:
 
 ```bash
 # In the widget repo (best-price-widget), at build time:
-VITE_TRACKER_ENDPOINT="https://your-admin.run.app/api/track" npm run build
+VITE_TRACKER_ENDPOINT="https://your-admin.run.app/api/i" npm run build
 ```
 
 The value is inlined into `widget.js`. Rebuild + redeploy widget.js
@@ -164,7 +166,7 @@ Without this flag the tracker stays inert (no cookie, no requests).
 2. In the console: `window.HPW_TRACKER_CONSENT = true; location.reload();`
 3. After reload you should see:
    - A `hpw_uid` cookie set on the host domain.
-   - A `POST /api/track` request to the admin (with body `event: widget_loaded`).
+   - A `POST /api/i` request to the admin (with body `event: widget_loaded`).
 4. Open the widget → second request, `event: widget_opened`.
 5. Click Book Now → third request, `event: book_clicked`.
 6. In BigQuery: `SELECT event, COUNT(*) FROM hotel_widget.events GROUP BY event`.
@@ -175,7 +177,7 @@ permissions on the service account or wrong dataset/table name.
 
 ## Custom events with booking metadata (sale, refund, …)
 
-The same `/api/track` endpoint also accepts arbitrary custom events
+The same `/api/i` endpoint also accepts arbitrary custom events
 plus optional structured booking fields. Useful for attribution from
 the booking-engine's confirmation page.
 
