@@ -713,6 +713,12 @@ app.post('/api/track', async (req, res) => {
   // outage doesn't blackhole legitimate traffic.
   const validIds = await getValidHotelIds();
   if (validIds && !validIds.has(hotelId)) {
+    console.warn(
+      '[tracker] reject 404 hotelId=%s knownIds=%j cacheSize=%d',
+      hotelId,
+      [...validIds].slice(0, 20),
+      validIds.size
+    );
     return res.status(404).json({ error: 'unknown hotelId' });
   }
 
