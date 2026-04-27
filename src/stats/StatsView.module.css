@@ -1,0 +1,140 @@
+.presets {
+  display: flex;
+  gap: 4px;
+}
+
+.presetBtn {
+  padding: 4px 10px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+.presetBtn:hover {
+  color: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
+}
+
+.dateRow {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.dateLabel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.dateInput {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+  font-size: var(--font-size-md);
+  font-family: var(--font-family);
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color 120ms;
+}
+.dateInput:focus {
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 1px var(--color-brand-primary);
+}
+
+.muted {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+.error {
+  font-size: var(--font-size-base);
+  color: var(--color-error-text);
+  padding: 10px 12px;
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+}
+
+.totalsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-3);
+}
+
+.totalCard {
+  padding: var(--space-3);
+  background: var(--color-bg-page);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.totalLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.totalCount {
+  font-size: 28px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-top: 4px;
+  letter-spacing: -0.02em;
+}
+
+.totalSub {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  margin-top: 4px;
+}
+
+.funnel {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+.funnelStep {
+  flex: 1;
+  padding: var(--space-3);
+  background: var(--color-bg-page);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.funnelLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.funnelCount {
+  font-size: 22px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.funnelRate {
+  font-size: var(--font-size-sm);
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-semibold);
+  margin-top: 2px;
+}

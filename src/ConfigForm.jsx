@@ -9,6 +9,7 @@ import DataTab from './tabs/DataTab.jsx';
 import AppearanceTab from './tabs/AppearanceTab.jsx';
 import LanguagesTab from './tabs/LanguagesTab.jsx';
 import AnalyticsTab from './tabs/AnalyticsTab.jsx';
+import StatsTab from './tabs/StatsTab.jsx';
 import PublishTab from './tabs/PublishTab.jsx';
 
 const DEFAULT_FORM = {
@@ -291,6 +292,9 @@ export default function ConfigForm({ editingHotelId, onBack }) {
         )}
         {activeTab === 'analytics' && (
           <AnalyticsTab form={form} updateField={updateField} />
+        )}
+        {activeTab === 'stats' && (
+          <StatsTab hotelId={form.hotelId} />
         )}
         {activeTab === 'publish' && (
           <PublishTab

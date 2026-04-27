@@ -18,7 +18,16 @@ export const TABS = [
   { key: 'appearance', label: 'Appearance' },
   { key: 'languages',  label: 'Languages' },
   { key: 'analytics',  label: 'Analytics' },
+  { key: 'stats',      label: 'Stats' },
   { key: 'publish',    label: 'Publish' },
+];
+
+// Tracked widget events. Stats UI assumes this order for funnel display.
+export const TRACKED_EVENTS = [
+  { key: 'widget_loaded', label: 'Loaded' },
+  { key: 'widget_opened', label: 'Opened' },
+  { key: 'book_clicked',  label: 'Book clicked' },
+  { key: 'sale',          label: 'Sale' },
 ];
 
 // Widget position on screen

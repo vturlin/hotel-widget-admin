@@ -1,0 +1,103 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  position: relative;
+}
+
+.empty {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  font-style: italic;
+  padding: var(--space-3);
+  text-align: center;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+}
+
+.svg {
+  display: block;
+}
+
+.gridLine {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.axisLabel {
+  font-size: 11px;
+  fill: var(--color-text-tertiary);
+  font-family: var(--font-family);
+}
+
+.hoverLine {
+  stroke: var(--color-border);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+}
+
+.tooltip {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: var(--font-size-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+  min-width: 160px;
+}
+
+.tooltipDay {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: 6px;
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.tooltipLabel {
+  flex: 1;
+  color: var(--color-text-secondary);
+}
+
+.tooltipValue {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
