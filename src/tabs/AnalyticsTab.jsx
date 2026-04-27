@@ -59,21 +59,12 @@ export default function AnalyticsTab({ form, updateField }) {
           </>
         }
       >
-        <Field
-          label="Tracker endpoint"
-          optional
-          hint={
-            <>
-              URL of your <code className={styles.inlineCode}>/api/track</code> endpoint. Leave empty to disable. The widget posts events here when consent is granted on the host page.
-            </>
-          }
-        >
-          <TextInput
-            value={form.trackerEndpoint || ''}
-            onChange={(v) => updateField('trackerEndpoint', v)}
-            placeholder="https://your-admin.run.app/api/track"
-          />
-        </Field>
+        <Toggle
+          checked={!!form.trackerEnabled}
+          onChange={(v) => updateField('trackerEnabled', v)}
+          label="Enable internal tracker"
+          hint="Endpoint is fixed in the widget build. Toggle this on to start sending events for this hotel once consent is granted."
+        />
       </GroupCard>
 
       <GroupCard

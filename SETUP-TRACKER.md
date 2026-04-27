@@ -120,24 +120,32 @@ On startup the server logs:
 - A first `insert` failure with `Could not load the default
   credentials` — none of A/B/C is in place; pick one.
 
-## 4. Configure each hotel config
+## 4. Bake the tracker endpoint into the widget bundle
 
-Add `trackerEndpoint` to the JSON config for hotels you want to track:
+The widget needs to know **where** to POST events. The endpoint is
+fixed at the widget's build time (it's the same admin URL for every
+hotel served by this admin), so it goes in a Vite env var:
 
-```json
-{
-  "hotelName": "Hôtel Demo",
-  "...": "...",
-  "trackerEndpoint": "https://your-admin.run.app/api/track"
-}
+```bash
+# In the widget repo (best-price-widget), at build time:
+VITE_TRACKER_ENDPOINT="https://your-admin.run.app/api/track" npm run build
 ```
 
-Hotels without `trackerEndpoint` simply don't fire events. (The admin
-UI doesn't yet expose this field — for Phase 1 add it manually, or
-publish the existing config and edit on GitHub. Phase 2 will add it
-to the Analytics tab.)
+The value is inlined into `widget.js`. Rebuild + redeploy widget.js
+whenever your admin URL changes.
 
-## 5. Wire up consent on the host page
+For local dev or to override per page without rebuilding, set
+`window.HPW_TRACKER_ENDPOINT` on the host page before the widget
+loads — the widget reads that as a higher-priority override.
+
+## 5. Toggle per-hotel in the admin
+
+Each hotel's config carries a boolean `trackerEnabled`. The admin UI's
+**Analytics** tab → *First-party tracker* card has a toggle for it.
+Hotels with `trackerEnabled: false` don't fire any events even on a
+build that has the endpoint set.
+
+## 6. Wire up consent on the host page
 
 The widget never sets a cookie or fires a request until it sees
 `window.HPW_TRACKER_CONSENT === true`. Standard wire-up: a GTM tag
@@ -149,7 +157,7 @@ that fires on the *Cookie Consent Granted* trigger:
 
 Without this flag the tracker stays inert (no cookie, no requests).
 
-## 6. Verify
+## 7. Verify
 
 1. Reload the hotel page → no `hpw_uid` cookie, no requests in
    DevTools → Network. Good.

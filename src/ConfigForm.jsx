@@ -34,7 +34,7 @@ const DEFAULT_FORM = {
   autoOpenScrollPercent: 50,
   analyticsEnabled: true,
   dataLayerName: 'dataLayer',
-  trackerEndpoint: '',
+  trackerEnabled: false,
 };
 
 export default function ConfigForm({ editingHotelId, onBack }) {
@@ -108,7 +108,11 @@ export default function ConfigForm({ editingHotelId, onBack }) {
           autoOpenScrollPercent: c.autoOpenScrollPercent || 50,
           analyticsEnabled: c.analytics?.enabled ?? true,
           dataLayerName: c.analytics?.dataLayerName || 'dataLayer',
-          trackerEndpoint: c.trackerEndpoint || '',
+          // Backwards-compat: a non-empty legacy trackerEndpoint counts as
+          // "tracker enabled" so existing configs don't silently go dark.
+          trackerEnabled:
+            c.trackerEnabled === true ||
+            (typeof c.trackerEndpoint === 'string' && c.trackerEndpoint.length > 0),
         };
         setForm(loaded);
         lastSnapshotRef.current = loaded;
