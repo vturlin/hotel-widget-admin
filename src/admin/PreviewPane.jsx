@@ -15,7 +15,10 @@ export default function PreviewPane({
   const fileInputRef = useRef(null);
   const [available, setAvailable] = useState({ w: 800, h: 600 });
   // { url, name } from URL.createObjectURL on a user-uploaded file.
-  // Wins over the live iframe when set. Cleared via "Use live page".
+  // The only way to get a real-website backdrop in the preview — there is
+  // no live-iframe attempt because most hotel sites block embedding via
+  // X-Frame-Options / CSP, so the live mode would be empty more often
+  // than not. Cleared via "Remove screenshot".
   const [uploadedImage, setUploadedImage] = useState(null);
 
   useEffect(() => {
@@ -79,18 +82,14 @@ export default function PreviewPane({
     setUploadedImage(null);
   }
 
-  // Backdrop precedence: uploaded image > live page iframe > demo placeholder.
-  const showUpload = !!uploadedImage;
-  const showLiveIframe = !uploadedImage && !!clientUrl;
-
   return (
     <div ref={wrapRef} className={styles.wrap}>
       <BrowserChrome
-        url={uploadedImage ? uploadedImage.name : clientUrl || 'demo.hotel-widget.app'}
+        url={clientUrl || 'demo.hotel-widget.app'}
         width={displayW}
       >
         <div style={{ width: displayW, height: displayH, position: 'relative' }}>
-          {showUpload && (
+          {uploadedImage ? (
             <img
               src={uploadedImage.url}
               alt="Uploaded client website"
@@ -103,27 +102,9 @@ export default function PreviewPane({
                 background: '#fff',
               }}
             />
+          ) : (
+            <div className={styles.demoBackdrop} />
           )}
-          {showLiveIframe && (
-            <iframe
-              key={clientUrl}
-              src={clientUrl}
-              title="Client website (live)"
-              sandbox="allow-scripts allow-same-origin allow-forms"
-              referrerPolicy="no-referrer-when-downgrade"
-              style={{
-                width: viewport.w,
-                height: viewport.h,
-                transform: `scale(${scale})`,
-                transformOrigin: 'top left',
-                border: 0,
-                position: 'absolute',
-                inset: 0,
-                background: '#fff',
-              }}
-            />
-          )}
-          {!showUpload && !showLiveIframe && <div className={styles.demoBackdrop} />}
 
           <iframe
             key={previewUrl}
@@ -150,9 +131,9 @@ export default function PreviewPane({
           type="button"
           className={styles.uploadBtn}
           onClick={handleUploadClick}
-          title="Upload an image to use as the backdrop when the live page can't be embedded"
+          title="Upload a screenshot of the hotel website to use as the preview backdrop"
         >
-          Upload screenshot
+          {uploadedImage ? 'Replace screenshot' : 'Upload screenshot'}
         </button>
         {uploadedImage && (
           <button
@@ -160,7 +141,7 @@ export default function PreviewPane({
             className={styles.clearBtn}
             onClick={handleClearUpload}
           >
-            × Use live page
+            × Remove
           </button>
         )}
         <input
