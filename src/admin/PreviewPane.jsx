@@ -13,6 +13,11 @@ export default function PreviewPane({
 }) {
   const wrapRef = useRef(null);
   const [available, setAvailable] = useState({ w: 800, h: 600 });
+  // Per-device counter: 0 = not yet captured, >0 = captured (and used as
+  // a remount key so clicking "Refresh" re-fetches even when the URL
+  // would otherwise be identical).
+  const [captureCounts, setCaptureCounts] = useState({ desktop: 0, mobile: 0 });
+  const [loading, setLoading] = useState(false);
   const [screenshotFailed, setScreenshotFailed] = useState(false);
 
   useEffect(() => {
@@ -47,22 +52,38 @@ export default function PreviewPane({
     return `https://${d}`;
   }, [clientDomain]);
 
+  // Editing the domain invalidates any previous capture: the URL the user
+  // typed no longer corresponds to what's on screen.
   useEffect(() => {
+    setCaptureCounts({ desktop: 0, mobile: 0 });
     setScreenshotFailed(false);
+    setLoading(false);
   }, [clientUrl]);
 
-  const screenshotUrl = useMemo(() => {
-    if (!clientUrl || screenshotFailed) return null;
-    return `https://image.thum.io/get/width/${viewport.w}/crop/${viewport.h}/${clientUrl}`;
-  }, [clientUrl, screenshotFailed, viewport.w, viewport.h]);
-
-  const useScreenshot = screenshotUrl !== null;
+  const captured = captureCounts[device] > 0;
+  const useScreenshot = !!clientUrl && captured && !screenshotFailed;
+  const screenshotUrl = useScreenshot
+    ? `https://image.thum.io/get/width/${viewport.w}/crop/${viewport.h}/${clientUrl}`
+    : null;
 
   const maxWidth = device === 'desktop' ? available.w : Math.min(320, available.w);
   const maxHeight = available.h;
   const scale = Math.min(maxWidth / viewport.w, maxHeight / viewport.h, 1);
   const displayW = viewport.w * scale;
   const displayH = viewport.h * scale;
+
+  function handleCapture() {
+    if (!clientUrl) return;
+    setScreenshotFailed(false);
+    setLoading(true);
+    setCaptureCounts((c) => ({ ...c, [device]: c[device] + 1 }));
+  }
+
+  const captureLabel = loading
+    ? 'Capturing…'
+    : captured
+      ? 'Refresh screenshot'
+      : 'Capture screenshot';
 
   return (
     <div ref={wrapRef} className={styles.wrap}>
@@ -73,10 +94,14 @@ export default function PreviewPane({
         <div style={{ width: displayW, height: displayH, position: 'relative' }}>
           {useScreenshot ? (
             <img
-              key={screenshotUrl}
+              key={`${screenshotUrl}-${captureCounts[device]}`}
               src={screenshotUrl}
               alt="Client website preview"
-              onError={() => setScreenshotFailed(true)}
+              onLoad={() => setLoading(false)}
+              onError={() => {
+                setLoading(false);
+                setScreenshotFailed(true);
+              }}
               style={{
                 width: viewport.w,
                 height: viewport.h,
@@ -112,6 +137,15 @@ export default function PreviewPane({
 
       <div className={styles.toggleRow}>
         <DeviceToggle device={device} onChange={setDevice} />
+        <button
+          type="button"
+          className={captured ? styles.captureBtnOutline : styles.captureBtnPrimary}
+          onClick={handleCapture}
+          disabled={!clientUrl || loading}
+          title={!clientUrl ? 'Set a valid Client domain in Identity to enable' : undefined}
+        >
+          {captureLabel}
+        </button>
       </div>
     </div>
   );

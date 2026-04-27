@@ -12,6 +12,38 @@
 
 .toggleRow {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.captureBtnPrimary,
+.captureBtnOutline {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+
+.captureBtnPrimary {
+  background: var(--color-brand-primary);
+  border: 1px solid var(--color-brand-primary);
+  color: var(--color-text-on-dark);
+}
+.captureBtnPrimary:hover:not(:disabled) { background: #372062; border-color: #372062; }
+
+.captureBtnOutline {
+  background: transparent;
+  border: 1px solid var(--color-brand-primary);
+  color: var(--color-brand-primary);
+}
+.captureBtnOutline:hover:not(:disabled) { background: rgba(67, 41, 117, 0.06); }
+
+.captureBtnPrimary:disabled,
+.captureBtnOutline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .demoBackdrop {
