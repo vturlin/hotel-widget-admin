@@ -50,10 +50,23 @@ export const SIZES = [
 // Whole-widget design. 'default' = wax-seal toggle + standard
 // floating panel. 'ticker' = full-width bottom rail with marquee
 // + dark panel that expands upward (Bloomberg terminal aesthetic).
-// Switching this changes both the closed and the open state.
+// 'vegas' = bordeaux/gold slot machine — three reels spin in cascade
+// and settle on the direct rate as the cheapest. Switching this
+// changes both the closed and the open state.
 export const WIDGET_DESIGNS = [
   { value: 'default', label: 'Default (wax seal + panel)' },
   { value: 'ticker',  label: 'Ticker (bottom rail + dark panel)' },
+  { value: 'vegas',   label: 'Vegas (slot machine)' },
+];
+
+// Sub-variants of the Vegas design — ornament density only, the slot
+// behaviour is identical across all four. Ordered from sober to
+// extravagant. Only consumed when widgetDesign === 'vegas'.
+export const VEGAS_VARIANTS = [
+  { value: 'sobre',       label: 'Sober (matte, no bulbs)' },
+  { value: 'standard',    label: 'Standard (static bulbs, default)' },
+  { value: 'riche',       label: 'Rich (double bulbs + ornaments)' },
+  { value: 'extravagant', label: 'Extravagant (bulb chase + neon)' },
 ];
 
 // Auto-open modes

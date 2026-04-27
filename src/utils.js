@@ -53,7 +53,16 @@ export function buildConfig(form) {
     currency: form.currency || 'EUR',
     position: form.position || 'bottom-right',
     size: form.size || 'small',
-    widgetDesign: form.widgetDesign === 'ticker' ? 'ticker' : 'default',
+    widgetDesign:
+      form.widgetDesign === 'ticker' ? 'ticker' :
+      form.widgetDesign === 'vegas' ? 'vegas' :
+      'default',
+    // Vegas sub-variant (ornament density). Only meaningful when
+    // widgetDesign === 'vegas'; harmless to publish for the others
+    // since the widget's loader ignores it.
+    vegasVariant: ['sobre', 'standard', 'riche', 'extravagant'].includes(form.vegasVariant)
+      ? form.vegasVariant
+      : 'standard',
     brandColor: form.brandColor || '#1a1a1a',
     // Optional override for the closed-state wax-seal toggle.
     // Empty string lets the widget fall back to brandColor.

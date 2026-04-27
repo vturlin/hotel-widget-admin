@@ -2,6 +2,7 @@ import {
   POSITIONS,
   SIZES,
   WIDGET_DESIGNS,
+  VEGAS_VARIANTS,
   AUTO_OPEN_MODES,
   AUTO_OPEN_DELAYS,
   SCROLL_THRESHOLDS,
@@ -67,6 +68,19 @@ export default function AppearanceTab({
             options={WIDGET_DESIGNS}
           />
         </Field>
+
+        {form.widgetDesign === 'vegas' && (
+          <Field
+            label="Vegas style"
+            hint="Ornament density. The slot mechanic is identical across all four — only the chassis bling changes."
+          >
+            <Select
+              value={form.vegasVariant || 'standard'}
+              onChange={(v) => updateField('vegasVariant', v)}
+              options={VEGAS_VARIANTS}
+            />
+          </Field>
+        )}
       </GroupCard>
 
       <GroupCard

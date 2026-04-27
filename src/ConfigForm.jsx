@@ -26,6 +26,7 @@ const DEFAULT_FORM = {
   position: 'bottom-right',
   size: 'small',
   widgetDesign: 'default',
+  vegasVariant: 'standard',
   brandColor: '#8b5a3c',
   toggleColor: '',
   backgroundColor: '#faf7f2',
@@ -109,7 +110,13 @@ export default function ConfigForm({ editingHotelId, onBack }) {
           widgetDesign:
             c.widgetDesign === 'ticker' || c.toggleDesign === 'ticker'
               ? 'ticker'
-              : 'default',
+              : c.widgetDesign === 'vegas' || c.toggleDesign === 'vegas'
+                ? 'vegas'
+                : 'default',
+          vegasVariant:
+            ['sobre', 'standard', 'riche', 'extravagant'].includes(c.vegasVariant)
+              ? c.vegasVariant
+              : 'standard',
           brandColor: c.brandColor || '#8b5a3c',
           toggleColor: c.toggleColor || '',
           backgroundColor: c.backgroundColor || '#faf7f2',
