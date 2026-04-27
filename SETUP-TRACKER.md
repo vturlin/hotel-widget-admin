@@ -203,66 +203,71 @@ the attribution forward.
 
 ### 3. Fire the sale event via `window.HPW.track`
 
-When the widget bundle is loaded on a page (which is the case on the
-hotel's own confirmation page after the booking-engine redirect), it
-exposes a global helper:
+Wherever the widget is loaded — the hotel site, the booking engine
+(both, in our case) — it exposes a stable global helper:
 
 ```js
 window.HPW.track(eventName, data)
 ```
 
-It reuses the widget's cookie, endpoint, and consent gate — you don't
-need to re-do any of that plumbing on the confirmation page. Pass any
+It reuses the widget's cookie, endpoint, and consent gate. Pass any
 event name matching `[a-z][a-z0-9_]{0,63}`. Three keys in `data` get
 lifted into typed BigQuery columns; anything else stays in the JSON
 payload column.
 
-The recommended wiring is a GTM Custom HTML tag triggered on the
-existing `purchase` dataLayer push (or whatever event your booking
-flow pushes on confirmation):
+#### 3a. Install the stub (fixes the race condition)
+
+In production, GTM tags that depend on `window.HPW` typically fire
+*before* the widget bundle has had time to load — the booking
+engine's SPA pushes `purchase` to the dataLayer the moment its
+confirmation component mounts. Without protection the tag throws
+`Cannot read properties of undefined (reading 'track')`.
+
+Standard analytics-SDK fix: install a tiny stub that queues calls,
+let the widget drain the queue when it arrives.
+
+Add a GTM Custom HTML tag in the same container:
+
+- **Tag name**: `HPW Stub`
+- **Trigger**: *All Pages* (or any trigger that fires before the
+  `purchase` event)
+- **Tag firing priority**: high (e.g. `1000`) so it runs ahead of
+  the sale tag
+- **HTML**:
 
 ```html
 <script>
-  // Reads the same fields GA4 / GTM e-commerce already populates.
-  var ec = (window.dataLayer || [])
-    .slice().reverse()
-    .find(function (e) { return e && e.event === 'purchase' && e.ecommerce; })
-    ?.ecommerce;
-
-  if (window.HPW && ec) {
-    window.HPW.track('sale', {
-      bookingId: String(ec.transaction_id || ''),
-      price:     parseFloat(ec.value),
-      currency:  String(ec.currency || 'EUR').toUpperCase(),
-      // any extra context you want goes here — it lands in the
-      // payload JSON column
-      items: ec.items?.length || null,
-    });
-  }
+window.HPW = window.HPW || {
+  q: [],
+  track: function () { window.HPW.q.push(arguments); }
+};
 </script>
 ```
 
-Or if you don't have a GTM purchase event yet, call it directly with
-values you read from the DOM:
+When the widget bundle finishes loading and runs `exposeOnWindow`,
+it detects the queue, replaces the stub with the real `track`
+implementation, and replays every queued call. Order of widget vs.
+sale-tag execution stops mattering.
+
+#### 3b. The sale tag
+
+GTM Custom HTML tag, trigger on the existing `purchase` dataLayer
+event (or whatever event your booking engine pushes on confirmation).
+Adapt `dl_booking.*` to your container's dataLayer variables:
 
 ```html
 <script>
-  if (window.HPW) {
-    window.HPW.track('sale', {
-      bookingId: document.querySelector('[data-booking-ref]')?.textContent.trim(),
-      price:     parseFloat(document.querySelector('[data-total]')?.textContent),
-      currency:  'EUR',
-    });
-  }
+window.HPW.track('sale', {
+  bookingId: String({{dl_booking.booking_reference}} || ''),
+  price:     parseFloat({{dl_booking.total_price}}),
+  currency:  'EUR',
+});
 </script>
 ```
 
 Same API for `refund`, `cancellation`, or any other custom event —
-just change the first argument.
-
-If `window.HPW` is undefined the call is a no-op (the widget hasn't
-loaded yet). Place the snippet AFTER the widget's `<script>` tag, or
-gate it behind the widget's load event.
+just change the first argument. Any extra keys you pass land in the
+JSON payload column for ad-hoc reporting.
 
 ### 4. Verify
 
