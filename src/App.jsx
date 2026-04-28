@@ -32,6 +32,10 @@ function AdminUI() {
   const [editingHotelId, setEditingHotelId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [statsTarget, setStatsTarget] = useState(null);
+  // Bumped to force a landing remount/refetch after a destructive
+  // action (delete). Stable across other state changes — opening
+  // the delete dialog must not flash the underlying list.
+  const [landingKey, setLandingKey] = useState(0);
 
   function handleSelectProduct(productKey) {
     if (productKey === 'best-price-widget') {
@@ -101,6 +105,7 @@ function AdminUI() {
             ? 'reassurance-landing'
             : 'landing';
     setDeleteTarget(null);
+    setLandingKey((k) => k + 1);
     setView(target);
   }
   function handleBackToLanding() {
@@ -242,7 +247,7 @@ function AdminUI() {
     return (
       <>
         <LeadGenLanding
-          key={Date.now()}
+          key={landingKey}
           onOpen={handleLeadGenOpen}
           onCreate={handleLeadGenCreate}
           onDuplicate={handleLeadGenDuplicate}
@@ -275,7 +280,7 @@ function AdminUI() {
     return (
       <>
         <StressLanding
-          key={Date.now()}
+          key={landingKey}
           onOpen={handleStressOpen}
           onCreate={handleStressCreate}
           onDuplicate={handleStressDuplicate}
@@ -308,7 +313,7 @@ function AdminUI() {
     return (
       <>
         <ReassuranceLanding
-          key={Date.now()}
+          key={landingKey}
           onOpen={handleReassuranceOpen}
           onCreate={handleReassuranceCreate}
           onDuplicate={handleReassuranceDuplicate}
@@ -355,7 +360,7 @@ function AdminUI() {
     return (
       <>
         <HotelsLanding
-          key={Date.now()}
+          key={landingKey}
           onOpen={handleOpen}
           onCreate={handleCreate}
           onDuplicate={handleDuplicate}
