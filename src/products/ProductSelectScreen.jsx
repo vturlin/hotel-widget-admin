@@ -33,7 +33,7 @@ const PRODUCTS = [
     name: 'D-EDGE Reassurance',
     summary:
       'Show a side-by-side comparison of guest review scores from every major platform — Booking, Tripadvisor, Google, Hotels.com.',
-    available: false,
+    available: true,
   },
 ];
 

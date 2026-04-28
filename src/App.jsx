@@ -4,12 +4,14 @@ import ProductSelectScreen from './products/ProductSelectScreen.jsx';
 import HotelsLanding from './landing/HotelsLanding.jsx';
 import LeadGenLanding from './landing/LeadGenLanding.jsx';
 import StressLanding from './landing/StressLanding.jsx';
+import ReassuranceLanding from './landing/ReassuranceLanding.jsx';
 import ConfirmDeleteDialog from './landing/ConfirmDeleteDialog.jsx';
 import GlobalStatsScreen from './stats/GlobalStatsScreen.jsx';
 import HotelStatsScreen from './stats/HotelStatsScreen.jsx';
 import ConfigForm from './ConfigForm.jsx';
 import LeadGenConfigForm from './leadgen/LeadGenConfigForm.jsx';
 import StressConfigForm from './stress/StressConfigForm.jsx';
+import ReassuranceConfigForm from './reassurance/ReassuranceConfigForm.jsx';
 
 export default function App() {
   const [authed, setAuthed] = useState(false);
@@ -38,6 +40,8 @@ function AdminUI() {
       setView('lead-gen-landing');
     } else if (productKey === 'stress-marketing') {
       setView('stress-landing');
+    } else if (productKey === 'reassurance') {
+      setView('reassurance-landing');
     }
   }
   function handleBackToProducts() {
@@ -93,7 +97,9 @@ function AdminUI() {
         ? 'lead-gen-landing'
         : deleteTarget?.product === 'stress'
           ? 'stress-landing'
-          : 'landing';
+          : deleteTarget?.product === 'reassurance'
+            ? 'reassurance-landing'
+            : 'landing';
     setDeleteTarget(null);
     setView(target);
   }
@@ -187,6 +193,47 @@ function AdminUI() {
     setView('stress-landing');
   }
 
+  // ── Reassurance handlers ────────────────────────────────────────
+  function handleReassuranceOpen(hotelId) {
+    setEditingHotelId(hotelId);
+    setView('reassurance-form');
+  }
+  function handleReassuranceCreate() {
+    setEditingHotelId(null);
+    setView('reassurance-form');
+  }
+  async function handleReassuranceDuplicate(sourceId) {
+    const newId = prompt(
+      `Duplicate "${sourceId}" to a new Hotel ID:`,
+      `${sourceId}_copy`
+    );
+    if (!newId) return;
+    if (!/^[a-zA-Z0-9_-]+$/.test(newId)) {
+      alert('Invalid ID. Use letters, numbers, dashes and underscores only.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/reassurance/duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceId, newId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Duplicate failed');
+      setEditingHotelId(newId);
+      setView('reassurance-form');
+    } catch (err) {
+      alert(`Duplicate failed: ${err.message}`);
+    }
+  }
+  function handleReassuranceDelete(hotelId, hotelName) {
+    setDeleteTarget({ hotelId, hotelName, product: 'reassurance' });
+  }
+  function handleBackToReassuranceLanding() {
+    setEditingHotelId(null);
+    setView('reassurance-landing');
+  }
+
   if (view === 'products') {
     return <ProductSelectScreen onSelect={handleSelectProduct} />;
   }
@@ -253,6 +300,39 @@ function AdminUI() {
       <StressConfigForm
         editingHotelId={editingHotelId}
         onBack={handleBackToStressLanding}
+      />
+    );
+  }
+
+  if (view === 'reassurance-landing') {
+    return (
+      <>
+        <ReassuranceLanding
+          key={Date.now()}
+          onOpen={handleReassuranceOpen}
+          onCreate={handleReassuranceCreate}
+          onDuplicate={handleReassuranceDuplicate}
+          onDelete={handleReassuranceDelete}
+          onBackToProducts={handleBackToProducts}
+        />
+        {deleteTarget && deleteTarget.product === 'reassurance' && (
+          <ConfirmDeleteDialog
+            hotelId={deleteTarget.hotelId}
+            hotelName={deleteTarget.hotelName}
+            deleteEndpoint={`/api/reassurance/config/${encodeURIComponent(deleteTarget.hotelId)}`}
+            onConfirm={handleDeleteConfirmed}
+            onCancel={() => setDeleteTarget(null)}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (view === 'reassurance-form') {
+    return (
+      <ReassuranceConfigForm
+        editingHotelId={editingHotelId}
+        onBack={handleBackToReassuranceLanding}
       />
     );
   }

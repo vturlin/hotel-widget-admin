@@ -48,6 +48,38 @@ export const STRESS_VARIANTS = [
   { value: 'social-proof', label: 'Social proof (booking activity)' },
 ];
 
+// ── Reassurance widget ──────────────────────────────────────────────
+
+export const REASSURANCE_PREVIEW_URL =
+  'https://vturlin.github.io/reassurance-widget/transparent.html';
+
+export const REASSURANCE_TABS = [
+  { key: 'identity', label: 'Identity' },
+  { key: 'content',  label: 'Content' },
+  { key: 'publish',  label: 'Publish' },
+];
+
+// Pre-filled platform templates for the Content-tab "Add platform"
+// dropdown. The operator only has to fill in score + count; id /
+// name / short / scale / color are baked in to match each platform's
+// brand identity. Add new entries here to expose more presets in the
+// admin without touching the form.
+export const REASSURANCE_PLATFORM_PRESETS = [
+  { id: 'booking',     name: 'Booking.com',  short: 'B.', scale: '/10', color: '#003580' },
+  { id: 'google',      name: 'Google',       short: 'G',  scale: '/5',  color: '#4285F4' },
+  { id: 'tripadvisor', name: 'Tripadvisor',  short: 'TA', scale: '/5',  color: '#34E0A1' },
+  { id: 'expedia',     name: 'Expedia',      short: 'E',  scale: '/5',  color: '#FFC72C' },
+  { id: 'hotels',      name: 'Hotels.com',   short: 'H',  scale: '/5',  color: '#D32F2F' },
+  { id: 'agoda',       name: 'Agoda',        short: 'A',  scale: '/10', color: '#FF6F61' },
+  { id: 'trustpilot',  name: 'Trustpilot',   short: 'TP', scale: '/5',  color: '#00B67A' },
+];
+
+// Platform score-scale options, used in the Content tab Select.
+export const REASSURANCE_SCALES = [
+  { value: '/10', label: 'Out of 10' },
+  { value: '/5',  label: 'Out of 5' },
+];
+
 // Rate screener API channels (from AvailPro)
 export const API_CHANNELS = {
   17: { name: 'Direct', isDirect: true },
