@@ -16,6 +16,18 @@ export const LEAD_GEN_TABS = [
   { key: 'publish',    label: 'Publish' },
 ];
 
+// Lead-gen image-pane width presets (desktop only — mobile reflows
+// the image to 100% width regardless). The card width tracks the
+// chosen image size so the content pane stays at a comfortable
+// 340px regardless of the preset. Values are bounded server-side
+// in the widget loader to 180–500px.
+export const LEAD_GEN_IMAGE_WIDTHS = [
+  { value: 220, label: 'Compact (220px)' },
+  { value: 300, label: 'Standard (300px)' },
+  { value: 380, label: 'Large (380px)' },
+  { value: 440, label: 'Wide (440px)' },
+];
+
 // Rate screener API channels (from AvailPro)
 export const API_CHANNELS = {
   17: { name: 'Direct', isDirect: true },

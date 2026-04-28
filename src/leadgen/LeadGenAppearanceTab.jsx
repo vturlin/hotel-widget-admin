@@ -3,6 +3,8 @@ import GroupCard from '../admin/GroupCard.jsx';
 import Field from '../components/forms/Field.jsx';
 import TextInput from '../components/forms/TextInput.jsx';
 import ColorInput from '../components/forms/ColorInput.jsx';
+import Select from '../components/forms/Select.jsx';
+import { LEAD_GEN_IMAGE_WIDTHS } from '../constants.js';
 
 const BRAND_PRESETS = ['#432975', '#0F766E', '#8B5A3C', '#1F5135', '#1A1A1A'];
 
@@ -18,7 +20,7 @@ export default function LeadGenAppearanceTab({ form, updateField }) {
         subtitle="Image and brand colour."
       />
 
-      <GroupCard title="Image" hint="A 220×280 hospitality photo works best — the popup crops to fit.">
+      <GroupCard title="Image" hint="A hospitality photo works best — the popup crops to fit (object-fit: cover).">
         <Field label="Image URL">
           <TextInput
             value={form.imageUrl}
@@ -37,6 +39,20 @@ export default function LeadGenAppearanceTab({ form, updateField }) {
             value={form.imageAlt}
             onChange={(v) => updateField('imageAlt', v)}
             placeholder="Hotel lobby at sunset"
+          />
+        </Field>
+
+        <Field
+          label="Image width (desktop)"
+          hint="Desktop only — mobile (≤480px) always shows the image as a 140px-tall band on top."
+        >
+          <Select
+            value={String(form.imageWidth || 300)}
+            onChange={(v) => updateField('imageWidth', parseInt(v, 10))}
+            options={LEAD_GEN_IMAGE_WIDTHS.map((w) => ({
+              value: String(w.value),
+              label: w.label,
+            }))}
           />
         </Field>
       </GroupCard>
