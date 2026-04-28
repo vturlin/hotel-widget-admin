@@ -43,7 +43,7 @@ export default function HotelsLanding({
       <div className={styles.inner}>
         <header className={styles.header}>
           <div className={styles.titleBlock}>
-            <h1 className={styles.title}>Hotels</h1>
+            <h1 className={styles.title}>D-EDGE Best Price Widget</h1>
             <p className={styles.subtitle}>
               Manage widget configurations for your properties
             </p>
