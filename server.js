@@ -774,6 +774,32 @@ const LEAD_GEN_LOCALE_NAMES = {
   it: 'Italian',
 };
 
+// Allowlist sanitizer for the message body — Gemini is asked to use
+// only <strong> and <em>, but we still strip anything outside that
+// set as defense-in-depth so the widget can safely render the HTML
+// via dangerouslySetInnerHTML. Attributes are dropped on the
+// allowed tags too.
+function sanitizeMessageHtml(html) {
+  if (typeof html !== 'string') return '';
+  return html.replace(
+    /<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g,
+    (_match, tagName) => {
+      const t = tagName.toLowerCase();
+      if (t === 'strong' || t === 'em') {
+        // Keep the tag but strip any attributes — bare opening or closing
+        return _match.startsWith('</') ? `</${t}>` : `<${t}>`;
+      }
+      return '';
+    }
+  );
+}
+
+// The title must stay plain text; strip any HTML the model might leak in.
+function stripAllTags(s) {
+  if (typeof s !== 'string') return '';
+  return s.replace(/<[^>]+>/g, '');
+}
+
 // Debug helper: returns the live list of Gemini models that the
 // server's API key has access to, filtered to those that support
 // generateContent. Use this when generate-content returns 404
@@ -831,8 +857,12 @@ app.post('/api/lead-gen/generate-content', async (req, res) => {
     const systemPrompt =
       'You are a hospitality marketing copywriter. ' +
       'Write a newsletter signup popup for a hotel website. ' +
-      'Output a punchy title (max 8 words) and a body message (max 90 words). ' +
-      'The title and message together must stay under 100 words. ' +
+      'Output a tight title (max 4 words) and a short body message ' +
+      '(one or two sentences, max 40 words). ' +
+      'The title and message together must stay under 50 words. ' +
+      'Be terse — every word earns its place. ' +
+      'In the message body, wrap one or two key phrases in <strong>...</strong> ' +
+      'to draw the eye. No other HTML tags. The title must be plain text. ' +
       'Match the requested tone exactly. ' +
       'Do not invent specific facts about the hotel. ' +
       'Do not include the hotel name in the title. ' +
@@ -867,7 +897,7 @@ app.post('/api/lead-gen/generate-content', async (req, res) => {
             required: ['title', 'message'],
           },
           temperature: 0.9,
-          maxOutputTokens: 400,
+          maxOutputTokens: 200,
         },
       }),
     });
@@ -901,8 +931,8 @@ app.post('/api/lead-gen/generate-content', async (req, res) => {
     }
 
     return res.json({
-      title: parsed.title.trim(),
-      message: parsed.message.trim(),
+      title: stripAllTags(parsed.title).trim(),
+      message: sanitizeMessageHtml(parsed.message).trim(),
     });
   } catch (err) {
     console.error('[api/lead-gen/generate-content]', err);
