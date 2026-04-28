@@ -118,6 +118,11 @@ export default function LeadGenConfigForm({ editingHotelId, onBack }) {
     lastSnapshotRef.current
   );
 
+  function handleBack() {
+    if (isDirty && !window.confirm('Discard unpublished changes?')) return;
+    onBack();
+  }
+
   function updateField(key, value) {
     setForm((f) => ({ ...f, [key]: value }));
   }
@@ -229,7 +234,7 @@ export default function LeadGenConfigForm({ editingHotelId, onBack }) {
       <AdminLayout
         hotelId={form.hotelId}
         hotelName={form.hotelName}
-        onBackToHotels={onBack}
+        onBackToHotels={handleBack}
         unpublishedCount={changedFields.length}
         canAct={!!form.hotelId && !!form.hotelId.trim()}
         onPreviewLive={previewLive}

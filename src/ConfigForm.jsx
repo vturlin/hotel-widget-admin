@@ -154,6 +154,13 @@ export default function ConfigForm({ editingHotelId, onBack }) {
 
   const { isDirty, changedFields } = useUnpublishedDiff(form, lastSnapshotRef.current);
 
+  // Wrap the parent's onBack so an accidental click on "Hotels" or
+  // the back arrow doesn't silently throw away unpublished edits.
+  function handleBack() {
+    if (isDirty && !window.confirm('Discard unpublished changes?')) return;
+    onBack();
+  }
+
   function updateField(key, value) {
     setForm((f) => ({ ...f, [key]: value }));
   }
@@ -292,7 +299,7 @@ export default function ConfigForm({ editingHotelId, onBack }) {
       <AdminLayout
         hotelId={form.hotelId}
         hotelName={form.hotelName}
-        onBackToHotels={onBack}
+        onBackToHotels={handleBack}
         unpublishedCount={changedFields.length}
         canAct={!!form.hotelId && !!form.hotelId.trim()}
         onPreviewLive={previewLive}
