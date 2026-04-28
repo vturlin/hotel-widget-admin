@@ -294,10 +294,9 @@ export default function ReassuranceConfigForm({ editingHotelId, onBack }) {
         <PublishConfirmDialog
           hotelId={form.hotelId}
           config={config}
-          isUpdate={isEditMode}
-          publishState={publishState}
           onConfirm={handleConfirmPublish}
           onCancel={() => setShowPublishDialog(false)}
+          isPublishing={publishState.status === 'publishing'}
         />
       )}
     </>
