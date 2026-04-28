@@ -28,6 +28,26 @@ export const LEAD_GEN_IMAGE_WIDTHS = [
   { value: 440, label: 'Wide (440px)' },
 ];
 
+// ── Stress-marketing widget ─────────────────────────────────────────
+
+export const STRESS_PREVIEW_URL =
+  'https://vturlin.github.io/stress-widget/transparent.html';
+
+export const STRESS_TABS = [
+  { key: 'identity', label: 'Identity' },
+  { key: 'content',  label: 'Content' },
+  { key: 'publish',  label: 'Publish' },
+];
+
+// Three urgency / social-proof toast formats. The variant key drives
+// which fields are shown in the Content tab and which sub-component
+// the widget renders at runtime.
+export const STRESS_VARIANTS = [
+  { value: 'just-booked',  label: 'Just booked (live notification)' },
+  { value: 'scarcity',     label: 'Scarcity (only X rooms left)' },
+  { value: 'social-proof', label: 'Social proof (booking activity)' },
+];
+
 // Rate screener API channels (from AvailPro)
 export const API_CHANNELS = {
   17: { name: 'Direct', isDirect: true },

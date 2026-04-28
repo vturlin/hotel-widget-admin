@@ -24,8 +24,8 @@ const PRODUCTS = [
     key: 'stress-marketing',
     name: 'D-EDGE Stress Marketing',
     summary:
-      'Surface scarcity and urgency cues at the moment they move the conversion needle.',
-    available: false,
+      'Surface urgency and social-proof toasts — booking activity, scarcity, demand trends — at the moment they move the conversion needle.',
+    available: true,
   },
 ];
 

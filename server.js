@@ -723,6 +723,239 @@ app.delete('/api/lead-gen/config/:hotelId', async (req, res) => {
   }
 });
 
+// ─── Stress-marketing widget routes ─────────────────────────────────
+// Same path layout as lead-gen, pointing at the stress-widget GitHub
+// repo. Set GITHUB_REPO_STRESS to override the default 'stress-widget'.
+
+function stressRepo() {
+  return process.env.GITHUB_REPO_STRESS || 'stress-widget';
+}
+
+app.get('/api/stress/current-config/:hotelId', async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+    if (!/^[a-zA-Z0-9_-]+$/.test(hotelId)) {
+      return res.status(400).json({ error: 'Invalid hotelId' });
+    }
+    if (!githubEnvOk(res)) return;
+    const owner = process.env.GITHUB_OWNER;
+    const repo = stressRepo();
+    const branch = process.env.GITHUB_BRANCH || 'main';
+
+    const filePath = `public/configs/${hotelId}.json`;
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}?ref=${branch}`;
+    const response = await fetch(apiUrl, { headers: githubHeaders() });
+
+    if (response.status === 404) return res.json({ exists: false });
+    if (!response.ok) {
+      const errTxt = await response.text();
+      return res.status(response.status).json({ error: `GitHub API error: ${errTxt.slice(0, 300)}` });
+    }
+    const data = await response.json();
+    const decoded = Buffer.from(data.content, 'base64').toString('utf-8');
+    return res.json({ exists: true, config: JSON.parse(decoded) });
+  } catch (err) {
+    console.error('[api/stress/current-config]', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/stress/publish', async (req, res) => {
+  try {
+    const { hotelId, config } = req.body || {};
+    if (!hotelId || typeof hotelId !== 'string') {
+      return res.status(400).json({ error: 'Missing hotelId' });
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(hotelId)) {
+      return res.status(400).json({ error: 'Invalid hotelId' });
+    }
+    if (!githubEnvOk(res)) return;
+    const owner = process.env.GITHUB_OWNER;
+    const repo = stressRepo();
+    const branch = process.env.GITHUB_BRANCH || 'main';
+
+    const filePath = `public/configs/${hotelId}.json`;
+    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}`;
+
+    let sha;
+    const existing = await fetch(`${apiUrl}?ref=${branch}`, { headers: githubHeaders() });
+    if (existing.ok) {
+      const data = await existing.json();
+      sha = data.sha;
+    }
+
+    const contentB64 = Buffer.from(JSON.stringify(config, null, 2), 'utf-8').toString('base64');
+    const payload = {
+      message: `stress: ${sha ? 'update' : 'create'} ${hotelId}`,
+      content: contentB64,
+      branch,
+    };
+    if (sha) payload.sha = sha;
+
+    const putRes = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: { ...githubHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!putRes.ok) {
+      const errTxt = await putRes.text();
+      return res.status(putRes.status).json({ error: `GitHub API error: ${errTxt.slice(0, 300)}` });
+    }
+    return res.json(await putRes.json());
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/stress/list-configs', async (req, res) => {
+  try {
+    if (!githubEnvOk(res)) return;
+    const owner = process.env.GITHUB_OWNER;
+    const repo = stressRepo();
+    const branch = process.env.GITHUB_BRANCH || 'main';
+
+    const listUrl = `https://api.github.com/repos/${owner}/${repo}/contents/public/configs?ref=${branch}`;
+    const listRes = await fetch(listUrl, { headers: githubHeaders() });
+    if (listRes.status === 404) return res.json({ hotels: [] });
+    if (!listRes.ok) {
+      const errTxt = await listRes.text();
+      return res.status(listRes.status).json({ error: errTxt.slice(0, 300) });
+    }
+
+    const files = await listRes.json();
+    const jsonFiles = files.filter((f) => f.type === 'file' && f.name.endsWith('.json'));
+
+    const hotels = await Promise.all(
+      jsonFiles.map(async (file) => {
+        const hotelId = file.name.replace(/\.json$/, '');
+        try {
+          const contentRes = await fetch(file.url, { headers: githubHeaders() });
+          const contentData = await contentRes.json();
+          const decoded = Buffer.from(contentData.content, 'base64').toString('utf-8');
+          const config = JSON.parse(decoded);
+
+          const commitsUrl = `https://api.github.com/repos/${owner}/${repo}/commits?path=${encodeURIComponent(file.path)}&per_page=1&sha=${branch}`;
+          const commitsRes = await fetch(commitsUrl, { headers: githubHeaders() });
+          const commits = commitsRes.ok ? await commitsRes.json() : [];
+          const lastCommitDate = commits[0]?.commit?.author?.date || null;
+
+          return {
+            hotelId,
+            hotelName: config.hotelName || '',
+            updatedAt: lastCommitDate,
+          };
+        } catch (err) {
+          console.error(`[stress list-configs] failed for ${hotelId}:`, err.message);
+          return { hotelId, hotelName: '', updatedAt: null, error: true };
+        }
+      })
+    );
+
+    hotels.sort((a, b) => {
+      if (!a.updatedAt) return 1;
+      if (!b.updatedAt) return -1;
+      return b.updatedAt.localeCompare(a.updatedAt);
+    });
+
+    return res.json({ hotels });
+  } catch (err) {
+    console.error('[api/stress/list-configs]', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/stress/duplicate', async (req, res) => {
+  try {
+    if (!githubEnvOk(res)) return;
+    const { sourceId, newId } = req.body || {};
+    if (!sourceId || !newId) {
+      return res.status(400).json({ error: 'Missing sourceId or newId' });
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(newId)) {
+      return res.status(400).json({ error: 'Invalid newId' });
+    }
+    const owner = process.env.GITHUB_OWNER;
+    const repo = stressRepo();
+    const branch = process.env.GITHUB_BRANCH || 'main';
+
+    const sourcePath = `public/configs/${sourceId}.json`;
+    const sourceUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(sourcePath)}?ref=${branch}`;
+    const sourceRes = await fetch(sourceUrl, { headers: githubHeaders() });
+    if (!sourceRes.ok) {
+      return res.status(404).json({ error: `Source config ${sourceId} not found` });
+    }
+    const sourceData = await sourceRes.json();
+    const decoded = Buffer.from(sourceData.content, 'base64').toString('utf-8');
+    const config = JSON.parse(decoded);
+
+    const targetPath = `public/configs/${newId}.json`;
+    const targetUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(targetPath)}?ref=${branch}`;
+    const existsRes = await fetch(targetUrl, { headers: githubHeaders() });
+    if (existsRes.ok) {
+      return res.status(409).json({ error: `Config ${newId} already exists` });
+    }
+
+    config.hotelName = `${config.hotelName || sourceId} (copy)`;
+
+    const putRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(targetPath)}`, {
+      method: 'PUT',
+      headers: { ...githubHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: `stress: duplicate ${sourceId} → ${newId}`,
+        content: Buffer.from(JSON.stringify(config, null, 2), 'utf-8').toString('base64'),
+        branch,
+      }),
+    });
+    if (!putRes.ok) {
+      const errTxt = await putRes.text();
+      return res.status(putRes.status).json({ error: errTxt.slice(0, 300) });
+    }
+    return res.json({ ok: true, newId });
+  } catch (err) {
+    console.error('[api/stress/duplicate]', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/stress/config/:hotelId', async (req, res) => {
+  try {
+    if (!githubEnvOk(res)) return;
+    const { hotelId } = req.params;
+    if (!/^[a-zA-Z0-9_-]+$/.test(hotelId)) {
+      return res.status(400).json({ error: 'Invalid hotelId' });
+    }
+    const owner = process.env.GITHUB_OWNER;
+    const repo = stressRepo();
+    const branch = process.env.GITHUB_BRANCH || 'main';
+
+    const filePath = `public/configs/${hotelId}.json`;
+    const fileUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}?ref=${branch}`;
+    const fileRes = await fetch(fileUrl, { headers: githubHeaders() });
+    if (!fileRes.ok) {
+      return res.status(404).json({ error: `Config ${hotelId} not found` });
+    }
+    const fileData = await fileRes.json();
+
+    const delRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}`, {
+      method: 'DELETE',
+      headers: { ...githubHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: `stress: delete ${hotelId}`,
+        sha: fileData.sha,
+        branch,
+      }),
+    });
+    if (!delRes.ok) {
+      const errTxt = await delRes.text();
+      return res.status(delRes.status).json({ error: errTxt.slice(0, 300) });
+    }
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[api/stress/config DELETE]', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Gemini-powered content generation for the lead-gen widget ──────
 // Composes a system + user prompt from the operator's selections in the
 // admin Content tab and calls the Gemini REST API directly. Uses the

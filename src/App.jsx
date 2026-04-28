@@ -3,11 +3,13 @@ import AuthScreen from './auth/AuthScreen.jsx';
 import ProductSelectScreen from './products/ProductSelectScreen.jsx';
 import HotelsLanding from './landing/HotelsLanding.jsx';
 import LeadGenLanding from './landing/LeadGenLanding.jsx';
+import StressLanding from './landing/StressLanding.jsx';
 import ConfirmDeleteDialog from './landing/ConfirmDeleteDialog.jsx';
 import GlobalStatsScreen from './stats/GlobalStatsScreen.jsx';
 import HotelStatsScreen from './stats/HotelStatsScreen.jsx';
 import ConfigForm from './ConfigForm.jsx';
 import LeadGenConfigForm from './leadgen/LeadGenConfigForm.jsx';
+import StressConfigForm from './stress/StressConfigForm.jsx';
 
 export default function App() {
   const [authed, setAuthed] = useState(false);
@@ -34,6 +36,8 @@ function AdminUI() {
       setView('landing');
     } else if (productKey === 'lead-gen') {
       setView('lead-gen-landing');
+    } else if (productKey === 'stress-marketing') {
+      setView('stress-landing');
     }
   }
   function handleBackToProducts() {
@@ -84,8 +88,14 @@ function AdminUI() {
     setDeleteTarget({ hotelId, hotelName, product: 'best-price' });
   }
   function handleDeleteConfirmed() {
+    const target =
+      deleteTarget?.product === 'lead-gen'
+        ? 'lead-gen-landing'
+        : deleteTarget?.product === 'stress'
+          ? 'stress-landing'
+          : 'landing';
     setDeleteTarget(null);
-    setView(deleteTarget?.product === 'lead-gen' ? 'lead-gen-landing' : 'landing');
+    setView(target);
   }
   function handleBackToLanding() {
     setEditingHotelId(null);
@@ -136,6 +146,47 @@ function AdminUI() {
     setView('lead-gen-landing');
   }
 
+  // ── Stress-marketing handlers ───────────────────────────────────
+  function handleStressOpen(hotelId) {
+    setEditingHotelId(hotelId);
+    setView('stress-form');
+  }
+  function handleStressCreate() {
+    setEditingHotelId(null);
+    setView('stress-form');
+  }
+  async function handleStressDuplicate(sourceId) {
+    const newId = prompt(
+      `Duplicate "${sourceId}" to a new Hotel ID:`,
+      `${sourceId}_copy`
+    );
+    if (!newId) return;
+    if (!/^[a-zA-Z0-9_-]+$/.test(newId)) {
+      alert('Invalid ID. Use letters, numbers, dashes and underscores only.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/stress/duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceId, newId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Duplicate failed');
+      setEditingHotelId(newId);
+      setView('stress-form');
+    } catch (err) {
+      alert(`Duplicate failed: ${err.message}`);
+    }
+  }
+  function handleStressDelete(hotelId, hotelName) {
+    setDeleteTarget({ hotelId, hotelName, product: 'stress' });
+  }
+  function handleBackToStressLanding() {
+    setEditingHotelId(null);
+    setView('stress-landing');
+  }
+
   if (view === 'products') {
     return <ProductSelectScreen onSelect={handleSelectProduct} />;
   }
@@ -169,6 +220,39 @@ function AdminUI() {
       <LeadGenConfigForm
         editingHotelId={editingHotelId}
         onBack={handleBackToLeadGenLanding}
+      />
+    );
+  }
+
+  if (view === 'stress-landing') {
+    return (
+      <>
+        <StressLanding
+          key={Date.now()}
+          onOpen={handleStressOpen}
+          onCreate={handleStressCreate}
+          onDuplicate={handleStressDuplicate}
+          onDelete={handleStressDelete}
+          onBackToProducts={handleBackToProducts}
+        />
+        {deleteTarget && deleteTarget.product === 'stress' && (
+          <ConfirmDeleteDialog
+            hotelId={deleteTarget.hotelId}
+            hotelName={deleteTarget.hotelName}
+            deleteEndpoint={`/api/stress/config/${encodeURIComponent(deleteTarget.hotelId)}`}
+            onConfirm={handleDeleteConfirmed}
+            onCancel={() => setDeleteTarget(null)}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (view === 'stress-form') {
+    return (
+      <StressConfigForm
+        editingHotelId={editingHotelId}
+        onBack={handleBackToStressLanding}
       />
     );
   }
