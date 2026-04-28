@@ -14,12 +14,9 @@ import ReassuranceContentTab from './ReassuranceContentTab.jsx';
 const DEFAULT_FORM = {
   hotelId: '',
   hotelName: '',
-  title: 'Guest reviews',
   aggregateScore: '4.8',
   totalReviews: '1,347',
   accentColor: '#432975',
-  badgeBg: '#ECE2FF',
-  badgeText: '#8764C9',
   footerText: 'Verified guest reviews · Updated daily',
   platforms: [
     { id: 'booking',     name: 'Booking.com',  short: 'B.', score: '8.9', scale: '/10', color: '#003580', count: '842' },
@@ -31,12 +28,9 @@ const DEFAULT_FORM = {
 function buildReassuranceConfig(form) {
   return {
     hotelName: form.hotelName || '',
-    title: form.title || '',
     aggregateScore: form.aggregateScore || '',
     totalReviews: form.totalReviews || '',
     accentColor: form.accentColor || '',
-    badgeBg: form.badgeBg || '',
-    badgeText: form.badgeText || '',
     footerText: form.footerText || '',
     platforms: Array.isArray(form.platforms) ? form.platforms : [],
   };
@@ -76,12 +70,9 @@ export default function ReassuranceConfigForm({ editingHotelId, onBack }) {
         const loaded = {
           hotelId: editingHotelId,
           hotelName: c.hotelName || '',
-          title: c.title || DEFAULT_FORM.title,
           aggregateScore: c.aggregateScore || DEFAULT_FORM.aggregateScore,
           totalReviews: c.totalReviews || DEFAULT_FORM.totalReviews,
           accentColor: c.accentColor || DEFAULT_FORM.accentColor,
-          badgeBg: c.badgeBg || DEFAULT_FORM.badgeBg,
-          badgeText: c.badgeText || DEFAULT_FORM.badgeText,
           footerText: c.footerText || DEFAULT_FORM.footerText,
           platforms:
             Array.isArray(c.platforms) && c.platforms.length > 0

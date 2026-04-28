@@ -10,8 +10,6 @@ import {
 } from '../constants.js';
 
 const ACCENT_PRESETS = ['#432975', '#0F766E', '#8B5A3C', '#1F5135', '#1A1A1A'];
-const BADGE_BG_PRESETS = ['#ECE2FF', '#DCFCE7', '#DBEAFE', '#FEF3C7', '#FEE2E2'];
-const BADGE_TEXT_PRESETS = ['#8764C9', '#15803D', '#1E40AF', '#92400E', '#B91C1C'];
 
 // Generate a unique key when the operator adds a "Custom…" platform.
 // The widget loader requires `id`+`name` to be present, so we seed
@@ -90,14 +88,6 @@ export default function ReassuranceContentTab({ form, updateField }) {
       />
 
       <GroupCard title="Header">
-        <Field label="Title" hint="Small uppercase pill at the top of the toast.">
-          <TextInput
-            value={form.title}
-            onChange={(v) => updateField('title', v)}
-            placeholder="Guest reviews"
-          />
-        </Field>
-
         <Field
           label="Aggregate score"
           hint="The big number — typically a normalized average across platforms."
@@ -116,30 +106,12 @@ export default function ReassuranceContentTab({ form, updateField }) {
             placeholder="1,347"
           />
         </Field>
-      </GroupCard>
 
-      <GroupCard title="Colors" hint="Drives the aggregate-score colour and the small uppercase pill.">
-        <Field label="Accent color">
+        <Field label="Accent color" hint="Drives the aggregate-score colour.">
           <ColorInput
             value={form.accentColor}
             onChange={(v) => updateField('accentColor', v)}
             presets={ACCENT_PRESETS}
-          />
-        </Field>
-
-        <Field label="Badge background">
-          <ColorInput
-            value={form.badgeBg}
-            onChange={(v) => updateField('badgeBg', v)}
-            presets={BADGE_BG_PRESETS}
-          />
-        </Field>
-
-        <Field label="Badge text color">
-          <ColorInput
-            value={form.badgeText}
-            onChange={(v) => updateField('badgeText', v)}
-            presets={BADGE_TEXT_PRESETS}
           />
         </Field>
       </GroupCard>
