@@ -857,16 +857,20 @@ app.post('/api/lead-gen/generate-content', async (req, res) => {
     const systemPrompt =
       'You are a hospitality marketing copywriter. ' +
       'Write a newsletter signup popup for a hotel website. ' +
-      'Output a tight title (max 4 words) and a short body message ' +
-      '(one or two sentences, max 40 words). ' +
+      'Output three pieces, all matching the same tone: ' +
+      '1) a tight title (max 4 words, plain text, no HTML), ' +
+      '2) a short body message (one or two sentences, max 40 words; ' +
+      'wrap one or two key phrases in <strong>...</strong> to draw the eye, ' +
+      'no other HTML tags), ' +
+      '3) a CTA button label (max 3 words, imperative verb, plain text, ' +
+      'no HTML, no punctuation). ' +
       'The title and message together must stay under 50 words. ' +
       'Be terse — every word earns its place. ' +
-      'In the message body, wrap one or two key phrases in <strong>...</strong> ' +
-      'to draw the eye. No other HTML tags. The title must be plain text. ' +
       'Match the requested tone exactly. ' +
       'Do not invent specific facts about the hotel. ' +
       'Do not include the hotel name in the title. ' +
-      'Return strictly JSON with this shape: { "title": string, "message": string }.';
+      'Return strictly JSON with this shape: ' +
+      '{ "title": string, "message": string, "buttonLabel": string }.';
 
     const userPrompt =
       `Hotel: ${safeHotelName}.\n` +
@@ -893,8 +897,9 @@ app.post('/api/lead-gen/generate-content', async (req, res) => {
             properties: {
               title: { type: 'STRING' },
               message: { type: 'STRING' },
+              buttonLabel: { type: 'STRING' },
             },
-            required: ['title', 'message'],
+            required: ['title', 'message', 'buttonLabel'],
           },
           temperature: 0.9,
           maxOutputTokens: 200,
@@ -924,15 +929,22 @@ app.post('/api/lead-gen/generate-content', async (req, res) => {
       });
     }
 
-    if (typeof parsed.title !== 'string' || typeof parsed.message !== 'string') {
-      return res
-        .status(500)
-        .json({ error: 'Gemini output missing title or message' });
+    if (
+      typeof parsed.title !== 'string' ||
+      typeof parsed.message !== 'string' ||
+      typeof parsed.buttonLabel !== 'string'
+    ) {
+      return res.status(500).json({
+        error: 'Gemini output missing title, message or buttonLabel',
+      });
     }
 
     return res.json({
       title: stripAllTags(parsed.title).trim(),
       message: sanitizeMessageHtml(parsed.message).trim(),
+      // CTA must stay plain text + bounded length. Trailing punctuation
+      // looks awkward inside a button, so trim it off.
+      buttonLabel: stripAllTags(parsed.buttonLabel).trim().replace(/[.!?…]+$/, ''),
     });
   } catch (err) {
     console.error('[api/lead-gen/generate-content]', err);

@@ -54,11 +54,13 @@ export default function LeadGenContentTab({ form, updateField }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Generation failed');
-      // Replace title + message in place. The unpublished-pill picks up
-      // the diff automatically via useUnpublishedDiff, so the operator
-      // sees the change as "pending publish" until they save.
+      // Replace title + message + buttonLabel in place. The
+      // unpublished-pill picks up the diff automatically via
+      // useUnpublishedDiff, so the operator sees the change as
+      // "pending publish" until they save.
       updateField('title', data.title);
       updateField('message', data.message);
+      if (data.buttonLabel) updateField('buttonLabel', data.buttonLabel);
       setGenStatus('idle');
     } catch (err) {
       setGenError(err.message);
@@ -77,7 +79,7 @@ export default function LeadGenContentTab({ form, updateField }) {
 
       <GroupCard
         title="Generate with AI"
-        hint="Pick a focus and a tone — Gemini fills in the title and body for you. Edit freely afterwards."
+        hint="Pick a focus and a tone — Gemini fills in the title, body and CTA button for you. Edit freely afterwards."
       >
         <Field label="Message type">
           <Select
