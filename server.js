@@ -1567,7 +1567,11 @@ app.use('/api/rates', ratesCors);
 app.get('/api/rates/:apiHotelId', async (req, res) => {
   try {
     const apiHotelId = parseInt(req.params.apiHotelId, 10);
-    if (!Number.isInteger(apiHotelId) || apiHotelId <= 0) {
+    // Upper bound: AvailPro IDs in production are 5-7 digits. The
+    // ceiling stops an attacker from spamming arbitrary IDs to flood
+    // the in-memory cache (each id:year:month is a unique key, no
+    // maxKeys on node-cache).
+    if (!Number.isInteger(apiHotelId) || apiHotelId <= 0 || apiHotelId > 10_000_000) {
       return res.status(400).json({ error: 'Invalid apiHotelId' });
     }
 

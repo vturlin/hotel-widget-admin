@@ -10,10 +10,18 @@ import Checkbox from '../components/forms/Checkbox.jsx';
 import Toggle from '../components/forms/Toggle.jsx';
 import styles from './DataTab.module.css';
 
+// Surface only invalid input as an error; an empty field is "not yet
+// filled" rather than wrong, so we keep showing the hint there.
+function apiHotelIdError(value) {
+  if (!value) return null;
+  return /^\d+$/.test(String(value).trim()) ? null : 'Must be a number.';
+}
+
 export default function DataTab({ form, updateField }) {
   const [testStatus, setTestStatus] = useState('idle');
   const [testError, setTestError] = useState('');
   const [apiAnalysis, setApiAnalysis] = useState(null);
+  const apiHotelIdErr = apiHotelIdError(form.apiHotelId);
 
   async function handleTestApi() {
     if (!form.apiHotelId) {
@@ -81,13 +89,17 @@ export default function DataTab({ form, updateField }) {
             type="button"
             className={styles.testBtn}
             onClick={handleTestApi}
-            disabled={testStatus === 'testing' || !form.apiHotelId}
+            disabled={testStatus === 'testing' || !form.apiHotelId || apiHotelIdErr}
           >
             {testStatus === 'testing' ? 'Testing…' : 'Test connection'}
           </button>
         }
       >
-        <Field label="API Hotel ID" hint="The unique hotel ID provided by AvailPro for this property.">
+        <Field
+          label="API Hotel ID"
+          hint="The unique hotel ID provided by AvailPro for this property."
+          error={apiHotelIdErr}
+        >
           <TextInput
             value={form.apiHotelId || ''}
             onChange={(v) => updateField('apiHotelId', v)}

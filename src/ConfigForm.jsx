@@ -181,6 +181,17 @@ export default function ConfigForm({ editingHotelId, onBack }) {
       });
       return;
     }
+    // Block publish if apiHotelId is set but not numeric — without
+    // this, buildConfig() in utils.js silently coerces "abc123" to
+    // null and the widget falls into fallback mode without the
+    // operator being aware.
+    if (form.apiHotelId && !/^\d+$/.test(String(form.apiHotelId).trim())) {
+      setPublishState({
+        status: 'error',
+        message: 'API Hotel ID must be a number — fix it on the Data tab before publishing.',
+      });
+      return;
+    }
     setPublishState({ status: 'idle' });
     setShowPublishDialog(true);
   }

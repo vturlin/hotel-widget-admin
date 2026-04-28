@@ -26,6 +26,13 @@
   margin-top: 6px;
 }
 
+.error {
+  font-size: var(--font-size-sm);
+  color: #c0392b;
+  line-height: 1.45;
+  margin-top: 6px;
+}
+
 .hint code {
   background: #F2EFEC;
   padding: 0 4px;
