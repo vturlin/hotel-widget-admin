@@ -5,6 +5,7 @@ import useUnpublishedDiff from '../hooks/useUnpublishedDiff.js';
 import AdminLayout from '../admin/AdminLayout.jsx';
 import PublishConfirmDialog from '../admin/PublishConfirmDialog.jsx';
 import PublishTab from '../tabs/PublishTab.jsx';
+import WidgetDisplayTab from '../admin/WidgetDisplayTab.jsx';
 import ReassuranceIdentityTab from './ReassuranceIdentityTab.jsx';
 import ReassuranceContentTab from './ReassuranceContentTab.jsx';
 
@@ -18,6 +19,10 @@ const DEFAULT_FORM = {
   totalReviews: '1,347',
   accentColor: '#432975',
   footerText: 'Verified guest reviews · Updated daily',
+  position: 'bottom-left',
+  triggerMode: 'immediate',
+  triggerDelaySec: 8,
+  triggerScrollPercent: 50,
   platforms: [
     { id: 'booking',     name: 'Booking.com',  short: 'B.', score: '8.9', scale: '/10', color: '#003580', count: '842' },
     { id: 'google',      name: 'Google',       short: 'G',  score: '4.8', scale: '/5',  color: '#4285F4', count: '316' },
@@ -32,6 +37,14 @@ function buildReassuranceConfig(form) {
     totalReviews: form.totalReviews || '',
     accentColor: form.accentColor || '',
     footerText: form.footerText || '',
+    position: form.position || 'bottom-left',
+    triggerMode: form.triggerMode || 'immediate',
+    triggerDelaySec: Number.isFinite(form.triggerDelaySec)
+      ? form.triggerDelaySec
+      : 8,
+    triggerScrollPercent: Number.isFinite(form.triggerScrollPercent)
+      ? form.triggerScrollPercent
+      : 50,
     platforms: Array.isArray(form.platforms) ? form.platforms : [],
   };
 }
@@ -74,6 +87,14 @@ export default function ReassuranceConfigForm({ editingHotelId, onBack }) {
           totalReviews: c.totalReviews || DEFAULT_FORM.totalReviews,
           accentColor: c.accentColor || DEFAULT_FORM.accentColor,
           footerText: c.footerText || DEFAULT_FORM.footerText,
+          position: c.position || DEFAULT_FORM.position,
+          triggerMode: c.triggerMode || DEFAULT_FORM.triggerMode,
+          triggerDelaySec: Number.isFinite(c.triggerDelaySec)
+            ? c.triggerDelaySec
+            : DEFAULT_FORM.triggerDelaySec,
+          triggerScrollPercent: Number.isFinite(c.triggerScrollPercent)
+            ? c.triggerScrollPercent
+            : DEFAULT_FORM.triggerScrollPercent,
           platforms:
             Array.isArray(c.platforms) && c.platforms.length > 0
               ? c.platforms.map((p) => ({
@@ -250,6 +271,9 @@ export default function ReassuranceConfigForm({ editingHotelId, onBack }) {
         )}
         {activeTab === 'content' && (
           <ReassuranceContentTab form={form} updateField={updateField} />
+        )}
+        {activeTab === 'display' && (
+          <WidgetDisplayTab form={form} updateField={updateField} />
         )}
         {activeTab === 'publish' && (
           <PublishTab

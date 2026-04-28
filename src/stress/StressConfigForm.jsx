@@ -5,6 +5,7 @@ import useUnpublishedDiff from '../hooks/useUnpublishedDiff.js';
 import AdminLayout from '../admin/AdminLayout.jsx';
 import PublishConfirmDialog from '../admin/PublishConfirmDialog.jsx';
 import PublishTab from '../tabs/PublishTab.jsx';
+import WidgetDisplayTab from '../admin/WidgetDisplayTab.jsx';
 import StressIdentityTab from './StressIdentityTab.jsx';
 import StressContentTab from './StressContentTab.jsx';
 
@@ -37,6 +38,12 @@ const DEFAULT_FORM = {
   subtitle: 'booked here today',
   caption: 'Trending up vs. last week',
   bars: [3, 6, 4, 8, 5, 9, 7, 11, 8, 12],
+
+  // Display behaviour (shared across variants)
+  position: 'bottom-left',
+  triggerMode: 'immediate',
+  triggerDelaySec: 8,
+  triggerScrollPercent: 50,
 };
 
 function buildStressConfig(form) {
@@ -57,6 +64,14 @@ function buildStressConfig(form) {
     subtitle: form.subtitle || '',
     caption: form.caption || '',
     bars: Array.isArray(form.bars) ? form.bars : [],
+    position: form.position || 'bottom-left',
+    triggerMode: form.triggerMode || 'immediate',
+    triggerDelaySec: Number.isFinite(form.triggerDelaySec)
+      ? form.triggerDelaySec
+      : 8,
+    triggerScrollPercent: Number.isFinite(form.triggerScrollPercent)
+      ? form.triggerScrollPercent
+      : 50,
   };
 }
 
@@ -113,6 +128,14 @@ export default function StressConfigForm({ editingHotelId, onBack }) {
           subtitle: c.subtitle || DEFAULT_FORM.subtitle,
           caption: c.caption || DEFAULT_FORM.caption,
           bars: Array.isArray(c.bars) && c.bars.length > 0 ? c.bars : DEFAULT_FORM.bars,
+          position: c.position || DEFAULT_FORM.position,
+          triggerMode: c.triggerMode || DEFAULT_FORM.triggerMode,
+          triggerDelaySec: Number.isFinite(c.triggerDelaySec)
+            ? c.triggerDelaySec
+            : DEFAULT_FORM.triggerDelaySec,
+          triggerScrollPercent: Number.isFinite(c.triggerScrollPercent)
+            ? c.triggerScrollPercent
+            : DEFAULT_FORM.triggerScrollPercent,
         };
         setForm(loaded);
         lastSnapshotRef.current = loaded;
@@ -277,6 +300,9 @@ export default function StressConfigForm({ editingHotelId, onBack }) {
         )}
         {activeTab === 'content' && (
           <StressContentTab form={form} updateField={updateField} />
+        )}
+        {activeTab === 'display' && (
+          <WidgetDisplayTab form={form} updateField={updateField} />
         )}
         {activeTab === 'publish' && (
           <PublishTab

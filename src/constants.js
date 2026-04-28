@@ -36,6 +36,7 @@ export const STRESS_PREVIEW_URL =
 export const STRESS_TABS = [
   { key: 'identity', label: 'Identity' },
   { key: 'content',  label: 'Content' },
+  { key: 'display',  label: 'Display' },
   { key: 'publish',  label: 'Publish' },
 ];
 
@@ -56,7 +57,20 @@ export const REASSURANCE_PREVIEW_URL =
 export const REASSURANCE_TABS = [
   { key: 'identity', label: 'Identity' },
   { key: 'content',  label: 'Content' },
+  { key: 'display',  label: 'Display' },
   { key: 'publish',  label: 'Publish' },
+];
+
+// ── Display behaviour (shared across the three toast products) ──────
+// Same wording as the best-price widget's auto-open machinery, with
+// 'immediate' replacing 'disabled' since these widgets have no
+// closed-state toggle: there's nothing to open later, only a delay
+// before the toast first appears.
+export const TRIGGER_MODES = [
+  { value: 'immediate',      label: 'Show immediately' },
+  { value: 'time',           label: 'Show after a delay' },
+  { value: 'scroll',         label: 'Show on scroll' },
+  { value: 'time_or_scroll', label: 'Delay or scroll (first wins)' },
 ];
 
 // Pre-filled platform templates for the Content-tab "Add platform"
