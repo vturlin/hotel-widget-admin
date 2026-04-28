@@ -2,9 +2,10 @@ import DEdgeLogo from '../admin/DEdgeLogo.jsx';
 import styles from './ProductSelectScreen.module.css';
 
 // First screen after login. Lets the operator pick which product
-// inside the suite they want to manage. Only the Best Price Widget
-// is wired today; the other two are placeholders for upcoming
-// products and render as disabled cards with a "Coming soon" badge.
+// inside the suite they want to manage. Cards marked available:false
+// render disabled with a "Coming soon" badge and short-circuit at the
+// screen level — selecting them is a no-op until the underlying
+// product flow is wired (landing + form + server routes).
 const PRODUCTS = [
   {
     key: 'best-price-widget',
@@ -26,6 +27,13 @@ const PRODUCTS = [
     summary:
       'Surface urgency and social-proof toasts — booking activity, scarcity, demand trends — at the moment they move the conversion needle.',
     available: true,
+  },
+  {
+    key: 'reassurance',
+    name: 'D-EDGE Reassurance',
+    summary:
+      'Show a side-by-side comparison of guest review scores from every major platform — Booking, Tripadvisor, Google, Hotels.com.',
+    available: false,
   },
 ];
 
