@@ -2,10 +2,12 @@ import { useState } from 'react';
 import AuthScreen from './auth/AuthScreen.jsx';
 import ProductSelectScreen from './products/ProductSelectScreen.jsx';
 import HotelsLanding from './landing/HotelsLanding.jsx';
+import LeadGenLanding from './landing/LeadGenLanding.jsx';
 import ConfirmDeleteDialog from './landing/ConfirmDeleteDialog.jsx';
 import GlobalStatsScreen from './stats/GlobalStatsScreen.jsx';
 import HotelStatsScreen from './stats/HotelStatsScreen.jsx';
 import ConfigForm from './ConfigForm.jsx';
+import LeadGenConfigForm from './leadgen/LeadGenConfigForm.jsx';
 
 export default function App() {
   const [authed, setAuthed] = useState(false);
@@ -14,30 +16,34 @@ export default function App() {
 }
 
 function AdminUI() {
-  // 'products' | 'landing' | 'form' | 'global-stats' | 'hotel-stats'
-  // 'products' is the post-login product picker; only the
-  // best-price-widget product currently lands on the hotels list.
+  // Views:
+  //   'products'         — post-login product picker
+  //   'landing'          — best-price hotels list
+  //   'form'             — best-price config form
+  //   'global-stats'     — best-price all-hotels stats
+  //   'hotel-stats'      — best-price single-hotel stats
+  //   'lead-gen-landing' — lead-gen configurations list
+  //   'lead-gen-form'    — lead-gen config form
   const [view, setView] = useState('products');
   const [editingHotelId, setEditingHotelId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  // Stored together so the hotel-stats screen can show a friendly name
-  // in its title even though the API only needs the id.
   const [statsTarget, setStatsTarget] = useState(null);
 
   function handleSelectProduct(productKey) {
     if (productKey === 'best-price-widget') {
       setView('landing');
+    } else if (productKey === 'lead-gen') {
+      setView('lead-gen-landing');
     }
-    // Other products are placeholders today — the ProductSelectScreen
-    // already disables their cards, so we shouldn't ever reach this
-    // branch with another key.
   }
   function handleBackToProducts() {
     setEditingHotelId(null);
     setStatsTarget(null);
+    setDeleteTarget(null);
     setView('products');
   }
 
+  // ── Best-price handlers ──────────────────────────────────────────
   function handleOpen(hotelId) {
     setEditingHotelId(hotelId);
     setView('form');
@@ -75,11 +81,11 @@ function AdminUI() {
     }
   }
   function handleDelete(hotelId, hotelName) {
-    setDeleteTarget({ hotelId, hotelName });
+    setDeleteTarget({ hotelId, hotelName, product: 'best-price' });
   }
   function handleDeleteConfirmed() {
     setDeleteTarget(null);
-    setView('landing');
+    setView(deleteTarget?.product === 'lead-gen' ? 'lead-gen-landing' : 'landing');
   }
   function handleBackToLanding() {
     setEditingHotelId(null);
@@ -89,8 +95,82 @@ function AdminUI() {
     setView('global-stats');
   }
 
+  // ── Lead-gen handlers ───────────────────────────────────────────
+  function handleLeadGenOpen(hotelId) {
+    setEditingHotelId(hotelId);
+    setView('lead-gen-form');
+  }
+  function handleLeadGenCreate() {
+    setEditingHotelId(null);
+    setView('lead-gen-form');
+  }
+  async function handleLeadGenDuplicate(sourceId) {
+    const newId = prompt(
+      `Duplicate "${sourceId}" to a new Hotel ID:`,
+      `${sourceId}_copy`
+    );
+    if (!newId) return;
+    if (!/^[a-zA-Z0-9_-]+$/.test(newId)) {
+      alert('Invalid ID. Use letters, numbers, dashes and underscores only.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/lead-gen/duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceId, newId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Duplicate failed');
+      setEditingHotelId(newId);
+      setView('lead-gen-form');
+    } catch (err) {
+      alert(`Duplicate failed: ${err.message}`);
+    }
+  }
+  function handleLeadGenDelete(hotelId, hotelName) {
+    setDeleteTarget({ hotelId, hotelName, product: 'lead-gen' });
+  }
+  function handleBackToLeadGenLanding() {
+    setEditingHotelId(null);
+    setView('lead-gen-landing');
+  }
+
   if (view === 'products') {
     return <ProductSelectScreen onSelect={handleSelectProduct} />;
+  }
+
+  if (view === 'lead-gen-landing') {
+    return (
+      <>
+        <LeadGenLanding
+          key={Date.now()}
+          onOpen={handleLeadGenOpen}
+          onCreate={handleLeadGenCreate}
+          onDuplicate={handleLeadGenDuplicate}
+          onDelete={handleLeadGenDelete}
+          onBackToProducts={handleBackToProducts}
+        />
+        {deleteTarget && deleteTarget.product === 'lead-gen' && (
+          <ConfirmDeleteDialog
+            hotelId={deleteTarget.hotelId}
+            hotelName={deleteTarget.hotelName}
+            deleteEndpoint={`/api/lead-gen/config/${encodeURIComponent(deleteTarget.hotelId)}`}
+            onConfirm={handleDeleteConfirmed}
+            onCancel={() => setDeleteTarget(null)}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (view === 'lead-gen-form') {
+    return (
+      <LeadGenConfigForm
+        editingHotelId={editingHotelId}
+        onBack={handleBackToLeadGenLanding}
+      />
+    );
   }
 
   if (view === 'global-stats') {

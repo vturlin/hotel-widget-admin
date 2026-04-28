@@ -6,7 +6,15 @@ import styles from './ConfirmDeleteDialog.module.css';
  * the hotelId to confirm — a standard pattern to prevent accidental
  * deletions (popularized by GitHub, Stripe, etc.).
  */
-export default function ConfirmDeleteDialog({ hotelId, hotelName, onConfirm, onCancel }) {
+export default function ConfirmDeleteDialog({
+  hotelId,
+  hotelName,
+  onConfirm,
+  onCancel,
+  // Override per product. Best-price defaults to /api/config/{id};
+  // lead-gen passes /api/lead-gen/config/{id}.
+  deleteEndpoint,
+}) {
   const [typed, setTyped] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
@@ -18,7 +26,8 @@ export default function ConfirmDeleteDialog({ hotelId, hotelName, onConfirm, onC
     setDeleting(true);
     setError('');
     try {
-      const res = await fetch(`/api/config/${encodeURIComponent(hotelId)}`, {
+      const url = deleteEndpoint || `/api/config/${encodeURIComponent(hotelId)}`;
+      const res = await fetch(url, {
         method: 'DELETE',
       });
       const data = await res.json();

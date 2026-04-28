@@ -1,10 +1,14 @@
 import { TABS } from '../constants.js';
 import styles from './TabBar.module.css';
 
-export default function TabBar({ activeTab, onTabChange }) {
+// `tabs` falls back to the best-price TABS so existing callers keep
+// working unchanged. Per-product config forms (lead-gen, future ones)
+// pass their own list to swap the bar content without forking the
+// component.
+export default function TabBar({ activeTab, onTabChange, tabs = TABS }) {
   return (
     <nav className={styles.bar}>
-      {TABS.map((t) => (
+      {tabs.map((t) => (
         <button
           key={t.key}
           type="button"

@@ -13,6 +13,7 @@ export default function AdminLayout({
   onPublish,
   activeTab,
   onTabChange,
+  tabs,
   preview,
   children,
 }) {
@@ -27,7 +28,7 @@ export default function AdminLayout({
         onPreviewLive={onPreviewLive}
         onPublish={onPublish}
       />
-      <TabBar activeTab={activeTab} onTabChange={onTabChange} />
+      <TabBar activeTab={activeTab} onTabChange={onTabChange} tabs={tabs} />
       <div className={styles.main}>
         <div className={styles.preview}>
           <PreviewPane {...preview} />

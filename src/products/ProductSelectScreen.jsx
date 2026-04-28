@@ -14,11 +14,11 @@ const PRODUCTS = [
     available: true,
   },
   {
-    key: 'basket-abandoners',
-    name: 'D-EDGE Basket Abandoners',
+    key: 'lead-gen',
+    name: 'D-EDGE Lead Gen',
     summary:
-      'Re-engage visitors who left the booking flow before completing their reservation.',
-    available: false,
+      'Capture newsletter signups with a configurable popup — branded image, custom copy, GDPR-friendly consent toggle.',
+    available: true,
   },
   {
     key: 'stress-marketing',

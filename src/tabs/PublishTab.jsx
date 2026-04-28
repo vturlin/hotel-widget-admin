@@ -11,8 +11,14 @@ export default function PublishTab({
   onCopyEmbed,
   isDirty,
   changedFields,
+  // Override per product. The lead-gen flow points at a different
+  // GitHub Pages bundle; defaulting to best-price keeps existing
+  // callers unchanged.
+  embedScriptSrc,
 }) {
   const canPublish = !!hotelId && hotelId.trim();
+  const scriptSrc = embedScriptSrc
+    || `https://vturlin.github.io/best-price-widget/widget.js?id=${hotelId}`;
 
   return (
     <>
@@ -81,7 +87,7 @@ export default function PublishTab({
             {' '}
             <span className={styles.attrName}>src</span>
             <span className={styles.tagPunct}>=</span>
-            <span className={styles.attrValue}>"https://vturlin.github.io/best-price-widget/widget.js?id={hotelId}"</span>
+            <span className={styles.attrValue}>"{scriptSrc}"</span>
             <span className={styles.tagPunct}>{'></script>'}</span>
             <button type="button" className={styles.copyBtn} onClick={onCopyEmbed} aria-label="Copy embed code">
               {copied ? 'Copied' : 'Copy'}

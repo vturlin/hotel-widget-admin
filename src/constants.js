@@ -3,6 +3,19 @@
 export const WIDGET_PREVIEW_URL =
   'https://vturlin.github.io/best-price-widget/transparent.html';
 
+// Lead-gen widget — same transparent.html pattern, different repo.
+export const LEAD_GEN_PREVIEW_URL =
+  'https://vturlin.github.io/lead-gen-widget/transparent.html';
+
+// Tabs for the lead-gen config form. Trimmed compared to the best-price
+// tabs because the widget has fewer dimensions to configure.
+export const LEAD_GEN_TABS = [
+  { key: 'identity',   label: 'Identity' },
+  { key: 'content',    label: 'Content' },
+  { key: 'appearance', label: 'Appearance' },
+  { key: 'publish',    label: 'Publish' },
+];
+
 // Rate screener API channels (from AvailPro)
 export const API_CHANNELS = {
   17: { name: 'Direct', isDirect: true },
