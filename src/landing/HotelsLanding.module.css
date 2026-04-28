@@ -19,6 +19,18 @@
 
 .titleBlock { display: flex; flex-direction: column; gap: 4px; }
 
+.back {
+  align-self: flex-start;
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-bottom: 8px;
+  transition: color 120ms;
+}
+.back:hover { color: var(--color-brand-primary); }
+
 .headerActions {
   display: flex;
   align-items: center;

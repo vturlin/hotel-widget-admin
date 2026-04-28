@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import AuthScreen from './auth/AuthScreen.jsx';
+import ProductSelectScreen from './products/ProductSelectScreen.jsx';
 import HotelsLanding from './landing/HotelsLanding.jsx';
 import ConfirmDeleteDialog from './landing/ConfirmDeleteDialog.jsx';
 import GlobalStatsScreen from './stats/GlobalStatsScreen.jsx';
@@ -13,13 +14,29 @@ export default function App() {
 }
 
 function AdminUI() {
-  // 'landing' | 'form' | 'global-stats' | 'hotel-stats'
-  const [view, setView] = useState('landing');
+  // 'products' | 'landing' | 'form' | 'global-stats' | 'hotel-stats'
+  // 'products' is the post-login product picker; only the
+  // best-price-widget product currently lands on the hotels list.
+  const [view, setView] = useState('products');
   const [editingHotelId, setEditingHotelId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   // Stored together so the hotel-stats screen can show a friendly name
   // in its title even though the API only needs the id.
   const [statsTarget, setStatsTarget] = useState(null);
+
+  function handleSelectProduct(productKey) {
+    if (productKey === 'best-price-widget') {
+      setView('landing');
+    }
+    // Other products are placeholders today — the ProductSelectScreen
+    // already disables their cards, so we shouldn't ever reach this
+    // branch with another key.
+  }
+  function handleBackToProducts() {
+    setEditingHotelId(null);
+    setStatsTarget(null);
+    setView('products');
+  }
 
   function handleOpen(hotelId) {
     setEditingHotelId(hotelId);
@@ -72,6 +89,10 @@ function AdminUI() {
     setView('global-stats');
   }
 
+  if (view === 'products') {
+    return <ProductSelectScreen onSelect={handleSelectProduct} />;
+  }
+
   if (view === 'global-stats') {
     return <GlobalStatsScreen onBack={handleBackToLanding} />;
   }
@@ -97,6 +118,7 @@ function AdminUI() {
           onDelete={handleDelete}
           onOpenStats={handleOpenGlobalStats}
           onOpenHotelStats={handleOpenHotelStats}
+          onBackToProducts={handleBackToProducts}
         />
         {deleteTarget && (
           <ConfirmDeleteDialog

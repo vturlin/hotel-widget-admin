@@ -15,6 +15,7 @@ export default function HotelsLanding({
   onDelete,
   onOpenStats,
   onOpenHotelStats,
+  onBackToProducts,
 }) {
   const [hotels, setHotels] = useState([]);
   const [status, setStatus] = useState('loading'); // loading | ready | error
@@ -43,6 +44,15 @@ export default function HotelsLanding({
       <div className={styles.inner}>
         <header className={styles.header}>
           <div className={styles.titleBlock}>
+            {onBackToProducts && (
+              <button
+                type="button"
+                onClick={onBackToProducts}
+                className={styles.back}
+              >
+                ← Products
+              </button>
+            )}
             <h1 className={styles.title}>D-EDGE Best Price Widget</h1>
             <p className={styles.subtitle}>
               Manage widget configurations for your properties
