@@ -1594,30 +1594,52 @@ async function getValidHotelIds() {
   if (cached) return cached;
 
   const owner = process.env.GITHUB_OWNER;
-  const repo = process.env.GITHUB_REPO;
-  if (!owner || !repo || !process.env.GITHUB_TOKEN) {
-    return null;
-  }
+  if (!owner || !process.env.GITHUB_TOKEN) return null;
   const branch = process.env.GITHUB_BRANCH || 'main';
-  try {
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/public/configs?ref=${branch}`;
-    const r = await fetch(url, { headers: githubHeaders() });
-    if (!r.ok) {
-      console.warn('[tracker] valid hotel IDs fetch failed', r.status);
-      return null;
-    }
-    const files = await r.json();
-    const ids = new Set(
-      files
-        .filter((f) => f.type === 'file' && f.name.endsWith('.json'))
-        .map((f) => f.name.slice(0, -5))
-    );
-    validHotelIdsCache.set('ids', ids);
-    return ids;
-  } catch (err) {
-    console.warn('[tracker] valid hotel IDs fetch threw', err.message);
-    return null;
-  }
+
+  // Tracker events come from any of the four widget repos. Aggregate
+  // the published config IDs from all of them so events from
+  // lead-gen / stress / reassurance widgets aren't 404'd just
+  // because the hotelId only exists outside best-price.
+  const repos = [
+    process.env.GITHUB_REPO,
+    leadGenRepo(),
+    stressRepo(),
+    reassuranceRepo(),
+  ].filter(Boolean);
+
+  const ids = new Set();
+  let anySucceeded = false;
+
+  await Promise.all(
+    repos.map(async (repo) => {
+      try {
+        const url = `https://api.github.com/repos/${owner}/${repo}/contents/public/configs?ref=${branch}`;
+        const r = await fetch(url, { headers: githubHeaders() });
+        if (!r.ok) {
+          console.warn(`[tracker] valid hotel IDs fetch failed (${repo})`, r.status);
+          return;
+        }
+        const files = await r.json();
+        for (const f of files) {
+          if (f.type === 'file' && f.name.endsWith('.json')) {
+            ids.add(f.name.slice(0, -5));
+          }
+        }
+        anySucceeded = true;
+      } catch (err) {
+        console.warn(`[tracker] valid hotel IDs fetch threw (${repo})`, err.message);
+      }
+    })
+  );
+
+  // Fail-open: if every repo failed (network outage etc.), return
+  // null so the caller lets events through rather than dropping
+  // legitimate traffic.
+  if (!anySucceeded) return null;
+
+  validHotelIdsCache.set('ids', ids);
+  return ids;
 }
 
 // Path is intentionally opaque ("/api/i") to slip past the generic
