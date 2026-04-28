@@ -735,7 +735,12 @@ app.delete('/api/lead-gen/config/:hotelId', async (req, res) => {
 // Required env: GEMINI_API_KEY
 //   Get one at https://aistudio.google.com/app/apikey
 
-const GEMINI_MODEL = 'gemini-3.1-flash-lite';
+// Pinned to the rolling -latest alias so we automatically pick up
+// the most recent Flash-Lite revision Google ships, without having
+// to redeploy whenever the version bumps. If you need reproducible
+// outputs across runs, switch this to a dated identifier from
+// GET /api/lead-gen/list-models.
+const GEMINI_MODEL = 'gemini-flash-lite-latest';
 
 const LEAD_GEN_MESSAGE_TYPES = {
   'exclusive-offers':
