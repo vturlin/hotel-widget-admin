@@ -153,13 +153,34 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '100kb' }));
 
 // ─── /api/auth ──────────────────────────────────────────────────────
-app.post('/api/auth', (req, res) => {
+// Rate-limited to slow down brute-force attempts. 10 attempts per
+// IP per 15 minutes is generous for a human typo'ing the password
+// and tight enough to make scripted guessing impractical.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many auth attempts. Try again later.' },
+});
+
+// Constant-time password compare. The naive `===` short-circuits at
+// the first differing byte, leaking length and prefix-match length
+// through response timing. timingSafeEqual requires equal-length
+// buffers, so we hash both sides first to a fixed-width digest.
+function safeCompareSecrets(a, b) {
+  const ha = crypto.createHash('sha256').update(String(a)).digest();
+  const hb = crypto.createHash('sha256').update(String(b)).digest();
+  return crypto.timingSafeEqual(ha, hb);
+}
+
+app.post('/api/auth', authLimiter, (req, res) => {
   const expected = process.env.ADMIN_PASSWORD;
   if (!expected) {
     return res.status(500).json({ error: 'ADMIN_PASSWORD not configured' });
   }
   const { password } = req.body || {};
-  if (password === expected) {
+  if (typeof password === 'string' && safeCompareSecrets(password, expected)) {
     return res.json({ ok: true });
   }
   return res.status(401).json({ error: 'Wrong password' });
