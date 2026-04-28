@@ -152,6 +152,67 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: '100kb' }));
 
+// ─── Session store ──────────────────────────────────────────────────
+// In-memory session map: token → expiresAt (ms epoch). Lost on
+// container restart; users re-authenticate on cold start. Acceptable
+// for a small admin tool — much safer than the previous scheme that
+// stored the raw password in a non-HttpOnly cookie.
+const sessions = new Map();
+const SESSION_COOKIE = 'admin_session';
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+function createSession() {
+  const token = crypto.randomBytes(32).toString('hex');
+  sessions.set(token, Date.now() + SESSION_TTL_MS);
+  return token;
+}
+
+function isSessionValid(token) {
+  if (!token) return false;
+  const expiresAt = sessions.get(token);
+  if (!expiresAt) return false;
+  if (expiresAt < Date.now()) {
+    sessions.delete(token);
+    return false;
+  }
+  return true;
+}
+
+function parseCookies(header) {
+  const out = {};
+  if (!header) return out;
+  for (const pair of header.split(';')) {
+    const idx = pair.indexOf('=');
+    if (idx < 0) continue;
+    const k = pair.slice(0, idx).trim();
+    const v = pair.slice(idx + 1).trim();
+    if (k) out[k] = decodeURIComponent(v);
+  }
+  return out;
+}
+
+function setSessionCookie(res, token) {
+  res.cookie(SESSION_COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: SESSION_TTL_MS,
+    path: '/',
+  });
+}
+
+function clearSessionCookie(res) {
+  res.clearCookie(SESSION_COOKIE, { path: '/' });
+}
+
+// Periodically purge expired sessions to keep the Map bounded.
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, expiresAt] of sessions) {
+    if (expiresAt < now) sessions.delete(token);
+  }
+}, 60 * 60 * 1000).unref();
+
 // ─── /api/auth ──────────────────────────────────────────────────────
 // Rate-limited to slow down brute-force attempts. 10 attempts per
 // IP per 15 minutes is generous for a human typo'ing the password
@@ -181,9 +242,55 @@ app.post('/api/auth', authLimiter, (req, res) => {
   }
   const { password } = req.body || {};
   if (typeof password === 'string' && safeCompareSecrets(password, expected)) {
+    const token = createSession();
+    setSessionCookie(res, token);
     return res.json({ ok: true });
   }
   return res.status(401).json({ error: 'Wrong password' });
+});
+
+app.get('/api/auth-check', (req, res) => {
+  const cookies = parseCookies(req.headers.cookie || '');
+  if (isSessionValid(cookies[SESSION_COOKIE])) {
+    return res.json({ authed: true });
+  }
+  return res.status(401).json({ authed: false });
+});
+
+app.post('/api/auth-logout', (req, res) => {
+  const cookies = parseCookies(req.headers.cookie || '');
+  const token = cookies[SESSION_COOKIE];
+  if (token) sessions.delete(token);
+  clearSessionCookie(res);
+  return res.json({ ok: true });
+});
+
+// ─── Auth middleware ────────────────────────────────────────────────
+// All /api/* endpoints below this line require a valid session
+// cookie EXCEPT the explicitly-public ones listed here:
+//   /api/auth, /api/auth-check, /api/auth-logout — login flow
+//   /api/rates/*  — called by the widget on hotel sites (public)
+//   /api/i, /api/track — first-party tracker beacons (public,
+//                       have their own validation/rate-limit)
+const PUBLIC_API_PREFIXES = [
+  '/api/auth',         // matches /api/auth, /api/auth-check, /api/auth-logout
+  '/api/rates',        // matches /api/rates and /api/rates/*
+  '/api/i',
+  '/api/track',
+];
+
+app.use('/api', (req, res, next) => {
+  const fullPath = '/api' + req.path;
+  for (const prefix of PUBLIC_API_PREFIXES) {
+    if (fullPath === prefix || fullPath.startsWith(prefix + '/')) {
+      return next();
+    }
+  }
+  const cookies = parseCookies(req.headers.cookie || '');
+  if (isSessionValid(cookies[SESSION_COOKIE])) {
+    return next();
+  }
+  return res.status(401).json({ error: 'Unauthorized' });
 });
 app.get('/api/current-config/:hotelId', async (req, res) => {
   try {

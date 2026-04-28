@@ -2,39 +2,26 @@ import { useEffect, useState } from 'react';
 import DEdgeLogo from '../admin/DEdgeLogo.jsx';
 import styles from './AuthScreen.module.css';
 
-// Persisted across visits so the operator doesn't have to re-type the
-// password every time. The cookie holds the password verbatim — the
-// server's /api/auth is stateless (no session token to issue), so the
-// client must replay the password on each cold load. SameSite=Strict
-// keeps it from leaking across origins; Secure is set on HTTPS.
-const COOKIE_NAME = 'dems_session';
-const COOKIE_DAYS = 30;
+// Auth flow:
+//   1. On mount, call /api/auth-check. If the server's HttpOnly
+//      session cookie is still valid, skip the form.
+//   2. Otherwise, prompt for the password. On success, the server
+//      sets the session cookie; we never read or write it from JS.
 
-function readCookie(name) {
-  const m = document.cookie.match(
-    new RegExp('(?:^|; )' + name + '=([^;]*)')
-  );
-  return m ? decodeURIComponent(m[1]) : null;
-}
-
-function writeCookie(name, value, days) {
-  const exp = new Date();
-  exp.setDate(exp.getDate() + days);
-  const secure = typeof location !== 'undefined' && location.protocol === 'https:'
-    ? '; Secure'
-    : '';
-  document.cookie =
-    `${name}=${encodeURIComponent(value)}; expires=${exp.toUTCString()}; path=/; SameSite=Strict${secure}`;
-}
-
-function clearCookie(name) {
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+async function checkSession() {
+  try {
+    const res = await fetch('/api/auth-check', { credentials: 'same-origin' });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 async function submitPassword(password) {
   try {
     const res = await fetch('/api/auth', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
     });
@@ -47,24 +34,18 @@ async function submitPassword(password) {
 export default function AuthScreen({ onAuthed }) {
   const [pwdInput, setPwdInput] = useState('');
   const [authError, setAuthError] = useState('');
-  // 'checking' while we replay a saved cookie; 'idle' once we know we
-  // need the user to type something.
+  // 'checking' while we probe for an existing session; 'idle' once
+  // we know the user needs to type a password.
   const [phase, setPhase] = useState('checking');
 
   useEffect(() => {
-    const saved = readCookie(COOKIE_NAME);
-    if (!saved) {
-      setPhase('idle');
-      return;
-    }
-    submitPassword(saved).then((ok) => {
-      if (ok) {
-        onAuthed();
-      } else {
-        clearCookie(COOKIE_NAME);
-        setPhase('idle');
-      }
+    let cancelled = false;
+    checkSession().then((ok) => {
+      if (cancelled) return;
+      if (ok) onAuthed();
+      else setPhase('idle');
     });
+    return () => { cancelled = true; };
   }, [onAuthed]);
 
   async function handleLogin(e) {
@@ -72,7 +53,6 @@ export default function AuthScreen({ onAuthed }) {
     setAuthError('');
     const ok = await submitPassword(pwdInput);
     if (ok) {
-      writeCookie(COOKIE_NAME, pwdInput, COOKIE_DAYS);
       onAuthed();
     } else {
       setAuthError('Wrong password');
