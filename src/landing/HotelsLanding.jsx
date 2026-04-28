@@ -8,7 +8,14 @@ import styles from './HotelsLanding.module.css';
  * The list is fetched from GitHub via the admin backend. While loading,
  * we show a lightweight spinner. On error, we show an inline banner.
  */
-export default function HotelsLanding({ onOpen, onCreate, onDuplicate, onDelete, onOpenStats }) {
+export default function HotelsLanding({
+  onOpen,
+  onCreate,
+  onDuplicate,
+  onDelete,
+  onOpenStats,
+  onOpenHotelStats,
+}) {
   const [hotels, setHotels] = useState([]);
   const [status, setStatus] = useState('loading'); // loading | ready | error
   const [error, setError] = useState('');
@@ -102,6 +109,7 @@ export default function HotelsLanding({ onOpen, onCreate, onDuplicate, onDelete,
                 key={h.hotelId}
                 hotel={h}
                 onOpen={() => onOpen(h.hotelId)}
+                onOpenStats={() => onOpenHotelStats(h.hotelId, h.hotelName)}
                 onDuplicate={() => onDuplicate(h.hotelId)}
                 onDelete={() => onDelete(h.hotelId, h.hotelName)}
               />
@@ -113,7 +121,7 @@ export default function HotelsLanding({ onOpen, onCreate, onDuplicate, onDelete,
   );
 }
 
-function HotelCard({ hotel, onOpen, onDuplicate, onDelete }) {
+function HotelCard({ hotel, onOpen, onOpenStats, onDuplicate, onDelete }) {
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -128,8 +136,7 @@ function HotelCard({ hotel, onOpen, onDuplicate, onDelete }) {
     };
   }, [menuOpen]);
 
-  function copyEmbed(e) {
-    e.stopPropagation();
+  function copyEmbed() {
     const code = `<script async src="https://vturlin.github.io/best-price-widget/widget.js?id=${hotel.hotelId}"></script>`;
     navigator.clipboard.writeText(code).then(() => {
       setCopied(true);
@@ -138,7 +145,56 @@ function HotelCard({ hotel, onOpen, onDuplicate, onDelete }) {
   }
 
   return (
-    <div className={styles.card} onClick={onOpen}>
+    <div className={styles.card}>
+      <div className={styles.cardMenu} onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpen((v) => !v);
+          }}
+          className={styles.menuBtn}
+          aria-label="More actions"
+        >
+          ⋯
+        </button>
+        {menuOpen && (
+          <div className={styles.menuPopup}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                copyEmbed();
+              }}
+            >
+              {copied ? 'Copied' : 'Copy embed'}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                onDuplicate();
+              }}
+            >
+              Duplicate
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                onDelete();
+              }}
+              className={styles.menuDanger}
+            >
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className={styles.cardMain}>
         <h3 className={styles.cardName}>
           {hotel.hotelName || <span className={styles.cardUnnamed}>Untitled</span>}
@@ -151,53 +207,21 @@ function HotelCard({ hotel, onOpen, onDuplicate, onDelete }) {
         )}
       </div>
 
-      <div className={styles.cardActions} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.cardActions}>
         <button
           type="button"
-          onClick={copyEmbed}
-          className={styles.actionBtn}
-          title="Copy embed code"
+          onClick={onOpen}
+          className={styles.primaryAction}
         >
-          {copied ? 'Copied' : 'Copy embed'}
+          Config
         </button>
-        <div className={styles.menu}>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenuOpen((v) => !v);
-            }}
-            className={styles.menuBtn}
-            aria-label="More actions"
-          >
-            ⋯
-          </button>
-          {menuOpen && (
-            <div className={styles.menuPopup}>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpen(false);
-                  onDuplicate();
-                }}
-              >
-                Duplicate
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpen(false);
-                  onDelete();
-                }}
-                className={styles.menuDanger}
-              >
-                Delete
-              </button>
-            </div>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={onOpenStats}
+          className={styles.secondaryAction}
+        >
+          Stats
+        </button>
       </div>
     </div>
   );

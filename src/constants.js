@@ -11,14 +11,14 @@ export const API_CHANNELS = {
   27:  { name: 'Agoda', isDirect: false },
   };
 
-// Tabs in the admin form
+// Tabs in the admin form. Per-hotel stats live on a dedicated screen
+// reached from the landing card's "Stats" button — not as a tab.
 export const TABS = [
   { key: 'identity',   label: 'Identity' },
   { key: 'data',       label: 'Data' },
   { key: 'appearance', label: 'Appearance' },
   { key: 'languages',  label: 'Languages' },
   { key: 'analytics',  label: 'Analytics' },
-  { key: 'stats',      label: 'Stats' },
   { key: 'publish',    label: 'Publish' },
 ];
 

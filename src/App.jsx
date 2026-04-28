@@ -3,6 +3,7 @@ import AuthScreen from './auth/AuthScreen.jsx';
 import HotelsLanding from './landing/HotelsLanding.jsx';
 import ConfirmDeleteDialog from './landing/ConfirmDeleteDialog.jsx';
 import GlobalStatsScreen from './stats/GlobalStatsScreen.jsx';
+import HotelStatsScreen from './stats/HotelStatsScreen.jsx';
 import ConfigForm from './ConfigForm.jsx';
 
 export default function App() {
@@ -12,14 +13,21 @@ export default function App() {
 }
 
 function AdminUI() {
-  // 'landing' | 'form' | 'global-stats'
+  // 'landing' | 'form' | 'global-stats' | 'hotel-stats'
   const [view, setView] = useState('landing');
   const [editingHotelId, setEditingHotelId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  // Stored together so the hotel-stats screen can show a friendly name
+  // in its title even though the API only needs the id.
+  const [statsTarget, setStatsTarget] = useState(null);
 
   function handleOpen(hotelId) {
     setEditingHotelId(hotelId);
     setView('form');
+  }
+  function handleOpenHotelStats(hotelId, hotelName) {
+    setStatsTarget({ hotelId, hotelName });
+    setView('hotel-stats');
   }
   function handleCreate() {
     setEditingHotelId(null);
@@ -68,6 +76,16 @@ function AdminUI() {
     return <GlobalStatsScreen onBack={handleBackToLanding} />;
   }
 
+  if (view === 'hotel-stats' && statsTarget) {
+    return (
+      <HotelStatsScreen
+        hotelId={statsTarget.hotelId}
+        hotelName={statsTarget.hotelName}
+        onBack={handleBackToLanding}
+      />
+    );
+  }
+
   if (view === 'landing') {
     return (
       <>
@@ -78,6 +96,7 @@ function AdminUI() {
           onDuplicate={handleDuplicate}
           onDelete={handleDelete}
           onOpenStats={handleOpenGlobalStats}
+          onOpenHotelStats={handleOpenHotelStats}
         />
         {deleteTarget && (
           <ConfirmDeleteDialog

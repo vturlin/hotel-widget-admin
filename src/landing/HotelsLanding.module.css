@@ -104,12 +104,12 @@
 }
 
 .card {
+  position: relative;
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 20px;
-  cursor: pointer;
-  transition: border-color 160ms, box-shadow 160ms, transform 160ms;
+  transition: border-color 160ms, box-shadow 160ms;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -117,7 +117,13 @@
 .card:hover {
   border-color: var(--color-brand-light);
   box-shadow: 0 4px 12px rgba(67,41,117,0.08);
-  transform: translateY(-1px);
+}
+
+/* Kebab menu pinned to the top-right of the card. */
+.cardMenu {
+  position: absolute;
+  top: 12px;
+  right: 12px;
 }
 
 .cardMain { display: flex; flex-direction: column; gap: 4px; }
@@ -155,27 +161,36 @@
 }
 
 .cardActions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
   padding-top: 12px;
   border-top: 1px solid var(--color-border);
-  gap: var(--space-2);
 }
 
-.actionBtn {
-  padding: 6px 12px;
+.primaryAction {
+  padding: 8px 12px;
+  background: var(--color-brand-primary);
+  border: 1px solid var(--color-brand-primary);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-on-dark);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  transition: background 120ms;
+}
+.primaryAction:hover { background: #372062; }
+
+.secondaryAction {
+  padding: 8px 12px;
   background: var(--color-bg-page);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   transition: background 120ms;
 }
-.actionBtn:hover { background: var(--color-bg-nav-active); }
-
-.menu { position: relative; }
+.secondaryAction:hover { background: var(--color-bg-nav-active); }
 
 .menuBtn {
   padding: 4px 10px;
