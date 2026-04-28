@@ -769,6 +769,41 @@ const LEAD_GEN_LOCALE_NAMES = {
   it: 'Italian',
 };
 
+// Debug helper: returns the live list of Gemini models that the
+// server's API key has access to, filtered to those that support
+// generateContent. Use this when generate-content returns 404
+// "model not found" — the official model identifier sometimes
+// differs from the marketing name (suffixes like -latest, -001,
+// -preview, dated revisions). Hit GET /api/lead-gen/list-models from
+// the browser (authed via cookie) to find the right value to put in
+// the GEMINI_MODEL constant.
+app.get('/api/lead-gen/list-models', async (req, res) => {
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
+    }
+    const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+    const r = await fetch(url);
+    if (!r.ok) {
+      const errText = await r.text();
+      return res.status(r.status).json({ error: errText.slice(0, 500) });
+    }
+    const data = await r.json();
+    const models = (data.models || [])
+      .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map((m) => ({
+        name: m.name,
+        displayName: m.displayName,
+        version: m.version,
+      }));
+    return res.json({ models });
+  } catch (err) {
+    console.error('[api/lead-gen/list-models]', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/lead-gen/generate-content', async (req, res) => {
   try {
     const { messageType, tone, hotelName, locale } = req.body || {};
