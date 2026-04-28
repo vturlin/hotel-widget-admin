@@ -1,28 +1,40 @@
 /**
- * Express server for production.
+ * Express server for the hotel-widget-admin Cloud Run service.
  *
- * In production (on Cloud Run), this server does two things:
- *   1. Serves the Vite-built static frontend from ./dist
- *   2. Exposes two JSON APIs:
- *      - POST /api/auth     — validates the admin password
- *      - POST /api/publish  — pushes a config JSON to GitHub
+ * Surfaces:
+ *   - Static frontend (Vite dist/) — admin SPA
+ *   - Auth: /api/auth, /api/auth-check, /api/auth-logout
+ *   - Per-product config CRUD on GitHub:
+ *       /api/{,lead-gen/,stress/,reassurance/} {list-configs,
+ *       current-config/:id, publish, duplicate, config/:id (DELETE)}
+ *   - Lead-gen content generation via Gemini:
+ *       /api/lead-gen/list-models, /api/lead-gen/generate-content
+ *   - Public widget endpoints (no auth):
+ *       /api/rates/:apiHotelId         — AvailPro proxy with 1h cache
+ *       /api/i, /api/track             — first-party tracker beacons
+ *   - Stats: /api/stats, /api/stats/:hotelId (BigQuery-backed)
  *
- * In development, you run `npm run dev` (Vite) and `node server.js` separately.
- * Vite proxies /api/* to this server via the `server.proxy` config.
+ * Auth model: HttpOnly Secure SameSite=Strict session cookie issued
+ * by /api/auth, validated by the requireAuth middleware mounted on
+ * /api/* (with explicit public prefixes for the widget and tracker).
  *
- * Env vars (all required in production):
- *   PORT              — HTTP port (Cloud Run provides this automatically)
- *   ADMIN_PASSWORD    — password for the admin UI
- *   GITHUB_TOKEN      — Personal Access Token with repo contents write
+ * Env vars (required):
+ *   PORT              — HTTP port (Cloud Run sets this)
+ *   ADMIN_PASSWORD    — admin login
+ *   GITHUB_TOKEN      — PAT with repo contents:write
  *   GITHUB_OWNER      — e.g. "vturlin"
- *   GITHUB_REPO       — e.g. "best-price-widget"
- *   GITHUB_BRANCH     — e.g. "main" (default)
+ *   GITHUB_REPO       — best-price repo (default branch: main)
+ *   GITHUB_REPO_LEAD_GEN, GITHUB_REPO_STRESS, GITHUB_REPO_REASSURANCE
+ *                     — one repo per product (defaults match the names)
  *
- * Optional (Phase 1 tracker — see SETUP-TRACKER.md):
- *   BQ_PROJECT_ID                   — GCP project that owns the dataset
- *   BQ_DATASET                      — BigQuery dataset (default: hotel_widget)
- *   BQ_TABLE                        — BigQuery table   (default: events)
- *   GOOGLE_APPLICATION_CREDENTIALS  — path to GCP service-account JSON
+ * Optional:
+ *   GITHUB_BRANCH     — default 'main'
+ *   GEMINI_API_KEY    — enables lead-gen content generation
+ *   BQ_PROJECT_ID, BQ_DATASET, BQ_TABLE — tracker BigQuery target
+ *   GOOGLE_APPLICATION_CREDENTIALS     — GCP service-account JSON path
+ *
+ * In dev, run `npm run dev` and `node server.js` side-by-side; Vite
+ * proxies /api/* to the Express port (8080).
  */
 
 import express from 'express';
@@ -42,9 +54,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // scales to zero after ~15 min of inactivity). Acceptable for the POC:
 // only cost is one extra upstream call on cold start.
 //
-// stdTTL    = 86400 seconds (24h) — default for every entry
-// checkperiod = 600 seconds (10 min) — background sweep of expired keys
-// useClones = false — don't deep-clone the big JSON on get/set (faster)
+// stdTTL      = 3600s (1h)  — default expiry per entry
+// checkperiod = 120s  (2m)  — background sweep of expired keys
+// useClones   = false       — skip the deep-clone on get/set (faster)
 
 const ratesCache = new NodeCache({
   stdTTL: 3600,
@@ -122,17 +134,14 @@ app.set('trust proxy', 1);
 //   - 'self': the admin's own Cloud Run origin
 //   - Google Fonts for our Inter typeface
 //   - D-EDGE logo hotlinked from their site
-//   - Thum.io for client site screenshots
 //   - GitHub Pages for the widget preview iframe
-//   - GitHub API for config fetch/publish (we call it server-side but the
-//     browser may preflight; fetch to api.github.com from admin frontend
-//     is NOT done directly, but kept as 'self' via our /api proxy)
+//   - data:/blob: for in-memory client-screenshot uploads
 app.use((req, res, next) => {
   res.setHeader(
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "img-src 'self' https://image.thum.io https://www.d-edge.com data: blob:",
+      "img-src 'self' https://www.d-edge.com data: blob:",
       "script-src 'self'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",

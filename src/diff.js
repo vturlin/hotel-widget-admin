@@ -2,16 +2,15 @@
  * Compute a flat, readable diff between two config objects.
  *
  * Returns an array of change entries, each with:
- *   - path    : string like "brandColor" or "channelLabels.agoda"
+ *   - path    : string like "brandColor" or "analytics.enabled"
  *   - type    : "added" | "removed" | "modified"
  *   - before  : value in the old config (undefined if added)
  *   - after   : value in the new config (undefined if removed)
  *
- * Why flat and not tree-shaped:
- *   - Easier to render as a list of lines (like a git diff)
- *   - Arrays of objects (like roomOptions) are compared by their JSON
- *     representation rather than item-by-item, which is good enough for
- *     our use case where rooms are small and rarely reordered.
+ * Why flat and not tree-shaped: easier to render as a list of lines
+ * (like a git diff). Arrays are compared by their JSON
+ * representation rather than item-by-item — good enough here since
+ * the only array fields (channelsEnabled, enabledLocales) are short.
  */
 
 export function diffConfigs(oldCfg, newCfg) {
