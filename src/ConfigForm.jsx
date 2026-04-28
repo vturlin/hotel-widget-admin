@@ -104,12 +104,10 @@ export default function ConfigForm({ editingHotelId, onBack }) {
           currency: c.currency || 'EUR',
           position: c.position || 'bottom-right',
           size: c.size || 'small',
-          // Backwards-compat: previous version stored this as
-          // toggleDesign. Read either, prefer the new key.
           widgetDesign:
-            c.widgetDesign === 'ticker' || c.toggleDesign === 'ticker'
+            c.widgetDesign === 'ticker'
               ? 'ticker'
-              : c.widgetDesign === 'vegas' || c.toggleDesign === 'vegas'
+              : c.widgetDesign === 'vegas'
                 ? 'vegas'
                 : 'default',
           vegasVariant:
@@ -126,11 +124,7 @@ export default function ConfigForm({ editingHotelId, onBack }) {
           autoOpenScrollPercent: c.autoOpenScrollPercent || 50,
           analyticsEnabled: c.analytics?.enabled ?? true,
           dataLayerName: c.analytics?.dataLayerName || 'dataLayer',
-          // Backwards-compat: a non-empty legacy trackerEndpoint counts as
-          // "tracker enabled" so existing configs don't silently go dark.
-          trackerEnabled:
-            c.trackerEnabled === true ||
-            (typeof c.trackerEndpoint === 'string' && c.trackerEndpoint.length > 0),
+          trackerEnabled: c.trackerEnabled === true,
         };
         setForm(loaded);
         lastSnapshotRef.current = loaded;
