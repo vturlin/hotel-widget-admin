@@ -723,6 +723,153 @@ app.delete('/api/lead-gen/config/:hotelId', async (req, res) => {
   }
 });
 
+// ─── Gemini-powered content generation for the lead-gen widget ──────
+// Composes a system + user prompt from the operator's selections in the
+// admin Content tab and calls the Gemini REST API directly. Uses the
+// flash-lite tier — fast, cheap, plenty for two short paragraphs.
+//
+// Why raw fetch over the @google/generative-ai SDK: this server already
+// runs lean on Cloud Run and the SDK adds ~5 MB to the cold-start image
+// for one endpoint. The REST API is straightforward.
+//
+// Required env: GEMINI_API_KEY
+//   Get one at https://aistudio.google.com/app/apikey
+
+const GEMINI_MODEL = 'gemini-3.1-flash-lite';
+
+const LEAD_GEN_MESSAGE_TYPES = {
+  'exclusive-offers':
+    'exclusive offers and rates reserved for newsletter subscribers',
+  'hotel-news':
+    'updates about the hotel: renovations, new menus, seasonal events',
+  'travel-tips':
+    'curated local travel tips and recommendations from the hotel',
+  'early-access':
+    'early access to deals and last-minute availability before the public',
+};
+
+const LEAD_GEN_TONES = {
+  formal:
+    'Formal and professional. Direct and polite. Inspires trust and credibility. The promise is reliable, expert information.',
+  pedagogical:
+    'Pedagogical and value-focused. Solution-oriented hook that shows what the reader gains. The promise is actionable advice or useful resources.',
+  exclusive:
+    'Exclusive and VIP. Mysterious or flattering hook. Plays on a sense of privilege and belonging to a closed community. The promise is access non-subscribers will never get.',
+  humorous:
+    'Humorous and offbeat. Playful, sometimes self-deprecating. Humanizes the brand and breaks the spam-fear barrier. The promise is good content without the heaviness.',
+  urgent:
+    'Urgent FOMO (fear of missing out). Direct and dynamic hook. Makes clear that not subscribing means missing something important. The promise is never being out of the loop.',
+};
+
+const LEAD_GEN_LOCALE_NAMES = {
+  en: 'English',
+  fr: 'French',
+  es: 'Spanish',
+  de: 'German',
+  it: 'Italian',
+};
+
+app.post('/api/lead-gen/generate-content', async (req, res) => {
+  try {
+    const { messageType, tone, hotelName, locale } = req.body || {};
+
+    if (!messageType || !LEAD_GEN_MESSAGE_TYPES[messageType]) {
+      return res.status(400).json({ error: 'Invalid or missing messageType' });
+    }
+    if (!tone || !LEAD_GEN_TONES[tone]) {
+      return res.status(400).json({ error: 'Invalid or missing tone' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
+    }
+
+    const language = LEAD_GEN_LOCALE_NAMES[locale] || 'English';
+    const safeHotelName = (hotelName || '').trim() || 'a boutique hotel';
+
+    const systemPrompt =
+      'You are a hospitality marketing copywriter. ' +
+      'Write a newsletter signup popup for a hotel website. ' +
+      'Output a punchy title (max 8 words) and a body message (max 90 words). ' +
+      'The title and message together must stay under 100 words. ' +
+      'Match the requested tone exactly. ' +
+      'Do not invent specific facts about the hotel. ' +
+      'Do not include the hotel name in the title. ' +
+      'Return strictly JSON with this shape: { "title": string, "message": string }.';
+
+    const userPrompt =
+      `Hotel: ${safeHotelName}.\n` +
+      `Newsletter focus: ${LEAD_GEN_MESSAGE_TYPES[messageType]}.\n` +
+      `Tone: ${LEAD_GEN_TONES[tone]}\n` +
+      `Output language: ${language}.`;
+
+    const url =
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        generationConfig: {
+          // Forces structured output — no markdown code fences, no extra
+          // commentary. The schema is a soft constraint that Gemini honours
+          // most of the time; we still validate the parsed JSON below.
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'OBJECT',
+            properties: {
+              title: { type: 'STRING' },
+              message: { type: 'STRING' },
+            },
+            required: ['title', 'message'],
+          },
+          temperature: 0.9,
+          maxOutputTokens: 400,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      return res
+        .status(response.status)
+        .json({ error: `Gemini API error: ${errText.slice(0, 300)}` });
+    }
+
+    const data = await response.json();
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) {
+      return res.status(500).json({ error: 'Empty Gemini response' });
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      return res.status(500).json({
+        error: `Could not parse Gemini output as JSON: ${rawText.slice(0, 200)}`,
+      });
+    }
+
+    if (typeof parsed.title !== 'string' || typeof parsed.message !== 'string') {
+      return res
+        .status(500)
+        .json({ error: 'Gemini output missing title or message' });
+    }
+
+    return res.json({
+      title: parsed.title.trim(),
+      message: parsed.message.trim(),
+    });
+  } catch (err) {
+    console.error('[api/lead-gen/generate-content]', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Rates API proxy ────────────────────────────────────────────────
 // Proxies calls to the AvailPro rate screener API. Keeps the salt
 // server-side (would be a critical leak if ever exposed in the widget)
